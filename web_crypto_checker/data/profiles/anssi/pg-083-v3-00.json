@@ -1,0 +1,34 @@
+{
+  "name": "ANSSI (règles cryptographiques)",
+  "authority": "ANSSI (France)",
+  "kind": "algorithm-strength",
+  "edition": "ANSSI-PG-083 v3.00 (2026-03-20)",
+  "reference": "ANSSI-PG-083 'Guide des mécanismes cryptographiques' v3.00: RegleTailleCleSym (>=128-bit symmetric), RegleTailleBlocSym (>=128-bit block), RegleHachage (>=256-bit hash; SHA-1 non-conformant), RegleMAC (>=96-bit tag), RegleFactorisation (RSA), RegleLogDiscretGFp (DH), RegleCourbeElliptiqueGFp (EC), §1.5 (no summary size table).",
+  "url": "https://cyber.gouv.fr/publications/mecanismes-cryptographiques",
+  "summary": "The French baseline, encoded by MECHANISM. ANSSI publishes numbered rules on primitives and key sizes, not a TLS cipher-suite list, so this profile encodes the rules rather than inventing a suite list.",
+  "notes": "ANSSI-PG-083 is a general mechanism guide, not TLS-specific: it publishes NO list of TLS cipher suites, groups or versions, so this profile constrains no protocol version and uses no cipher_suites allowlist -- doing so would be our synthesis, not ANSSI's rule (FLAG). cipher_tags disallow derives from the mechanism rules: RegleTailleBlocSym 'blocs d'au moins 128 bits' fails 3DES (64-bit block) -> 3des; the stream/block key-size and strength rules fail RC4, single DES and export -> rc4/des/export; NULL/anon lack encryption/authentication. RegleHachage.1/.2 make SHA-1 'non conforme au referentiel' and MD5 fails too -> md5, sha1 (the HMAC-SHA-1 MAC), and signature_algorithms.disallow rsa_pkcs1_sha1/ecdsa_sha1/rsa_pkcs1_md5. CBC is NOT disallowed (RegleModeChiff's conformant example is CBC+AES with a random IV) and ChaCha20 is NOT disallowed (it is conformant to the stream-cipher rules); no-forward-secrecy is NOT disallowed (PFS is an ANSSI recommandation, not a regle). certificate min_rsa_bits 2048 (RegleFactorisation.1: >=2048 bits until end 2030; 3072 from 2031), min_ec_bits 250 (RegleCourbeElliptiqueGFp: subgroup order >=250 bits), disallow_sha1. FLAG: no minimum_security_strength is set, because §1.5 states 'Ce document ne comporte volontairement aucune table recapitulative des tailles minimales' -- collapsing the per-mechanism rules into one figure would be our synthesis. That is why an RSA-2048 server passes ANSSI while failing BSI and ENS.",
+  "cipher_tags": {
+    "disallow": [
+      "rc4",
+      "3des",
+      "des",
+      "export",
+      "null",
+      "anon",
+      "md5",
+      "sha1"
+    ]
+  },
+  "signature_algorithms": {
+    "disallow": [
+      "rsa_pkcs1_sha1",
+      "ecdsa_sha1",
+      "rsa_pkcs1_md5"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 250,
+    "disallow_sha1": true
+  }
+}

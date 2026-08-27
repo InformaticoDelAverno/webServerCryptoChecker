@@ -1,0 +1,34 @@
+{
+  "name": "CIS Apache HTTP Server 2.4 Benchmark",
+  "authority": "Center for Internet Security",
+  "kind": "algorithm-strength",
+  "edition": "v2.3.0",
+  "reference": "CIS Apache HTTP Server 2.4 Benchmark v2.3.0: Rec. 7.4 'Ensure the TLSv1.0 and TLSv1.1 Protocols are Disabled', Rec. 7.5 'Ensure Weak SSL/TLS Ciphers Are Disabled', Rec. 7.8 'Ensure Medium Strength SSL/TLS Ciphers Are Disabled', Rec. 7.10 'Ensure OCSP Stapling Is Enabled', Rec. 7.11 'Ensure HTTP Strict Transport Security Is Enabled', Rec. 7.12 'Ensure Only Cipher Suites That Provide Forward Secrecy Are Enabled'.",
+  "url": "https://www.cisecurity.org/cis-benchmarks",
+  "summary": "The Apache hardening baseline. TLS 1.2/1.3 with forward-secret non-weak ciphers, OCSP stapling, and HSTS.",
+  "notes": "protocols.allow [tls1_2, tls1_3]: Rec. 7.4 'the only SSL/TLS protocols that should be allowed is TLSv1.2 along with the newer TLSv1.3 protocol' via 'SSLProtocol +TLSv1.2 +TLSv1.3'. cipher_tags disallow: Rec. 7.5 'SSLCipherSuite ALL:!EXP:!NULL:!LOW:!SSLv2:!RC4:!aNULL' -> export, null, des (LOW), rc4, anon; Rec. 7.8 adds '!3DES:!IDEA' -> 3des; Rec. 7.12 'Only Cipher Suites That Provide Forward Secrecy ... require either the ECDHE or the DHE ephemeral key exchange' -> no-forward-secrecy. require_ocsp_stapling: Rec. 7.10 'SSLUseStapling On'. require_hsts with hsts_min_age 480: Rec. 7.11 (Level 2) 'a max-age value of at least 480 seconds or more' -- a deliberately low bar in this benchmark. No certificate key size is specified.",
+  "protocols": {
+    "allow": [
+      "tls1_2",
+      "tls1_3"
+    ]
+  },
+  "cipher_tags": {
+    "disallow": [
+      "export",
+      "null",
+      "des",
+      "rc4",
+      "anon",
+      "3des",
+      "no-forward-secrecy"
+    ]
+  },
+  "hsts": {
+    "require": true,
+    "min_age": 480
+  },
+  "ocsp_stapling": {
+    "require": true
+  }
+}

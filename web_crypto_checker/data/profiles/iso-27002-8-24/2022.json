@@ -1,0 +1,14 @@
+{
+  "name": "ISO/IEC 27002:2022 8.24",
+  "authority": "ISO/IEC",
+  "kind": "policy-conformance",
+  "edition": "ISO/IEC 27002:2022, control 8.24",
+  "reference": "ISO/IEC 27002:2022 control 8.24 'Use of cryptography', whose Control statement is: 'Rules for the effective use of cryptography, including cryptographic key management, should be defined and implemented.'",
+  "url": "https://www.iso.org/standard/75652.html",
+  "summary": "ISO names no algorithms or strength levels: control 8.24 is principle-based. This profile therefore checks the server against THIS tool's own policy categories, which are that documented rule set.",
+  "notes": "Control 8.24 (verbatim): 'Rules for the effective use of cryptography, including cryptographic key management, should be defined and implemented.' Its guidance leaves the choice of algorithms to the organisation: item b) 'establishing the type, strength and quality of the cryptographic algorithms required' and item f) 'cryptographic algorithms, cipher strength ... approved or required for use in the organization'. It names no algorithm or key length anywhere, so this is a policy-conformance profile: it flags any offered algorithm the local policy rates 'weak' or 'insecure', treating the tool's policy as the organisation's documented rules. A pass is evidence the server enforces those rules; it is NOT an ISO certification and says nothing about strength on its own -- read it with the NIST profiles. FLAG: this profile is grounded on ISO/IEC 27002:2022 §8.24 (the copy held in docs/estandares/), which carries the control's implementation guidance. ISO/IEC 27001:2022 Annex A lists the same control 8.24 by title, but the 27001 copy in the document warehouse is the 2005 edition (whose Annex A uses A.12.3, not 8.24), so the citation is to 27002:2022, the edition actually held.",
+  "forbid_local_categories": [
+    "weak",
+    "insecure"
+  ]
+}

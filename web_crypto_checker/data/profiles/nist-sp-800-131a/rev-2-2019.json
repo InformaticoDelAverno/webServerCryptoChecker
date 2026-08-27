@@ -1,0 +1,34 @@
+{
+  "name": "NIST SP 800-131A Rev. 2",
+  "authority": "NIST",
+  "kind": "algorithm-strength",
+  "edition": "Rev. 2, March 2019",
+  "reference": "NIST SP 800-131A Rev. 2, Transitioning the Use of Cryptographic Algorithms and Key Lengths: §3 (at least 112 bits of security strength), Table 1 (three-key TDEA disallowed after 2023), Table 8 (SHA-1 signature generation disallowed), Tables 2/4/5 (RSA/DSA/DH >= 2048, ECDSA/EdDSA >= 224).",
+  "url": "https://doi.org/10.6028/NIST.SP.800-131Ar2",
+  "summary": "Baseline transition rules: at least 112-bit security strength, no SHA-1 digital signatures, no three-key Triple DES after 2023.",
+  "notes": "minimum_security_strength 112: §3 'a security strength of at least 112 bits is required at this time for applying cryptographic protection'. cipher_tags disallow: Table 1 'Three-key TDEA Encryption ... Disallowed after 2023' -> 3des; RC4, single DES and export provide well under 112 bits; NULL/anon/MD5 are not approved. CBC and HMAC-SHA-1 MAC remain acceptable under this standard (SHA-1 is disallowed only for signature GENERATION, and HMAC does not rely on collision resistance), so 'cbc' and 'sha1' tags are NOT disallowed. signature_algorithms.disallow: Table 8 'SHA-1 ... Digital signature generation: Disallowed ...' -> rsa_pkcs1_sha1, ecdsa_sha1; MD5 -> rsa_pkcs1_md5. certificate min_rsa_bits 2048 (Table 2/5 'len(n) >= 2048'), min_ec_bits 224 (Table 2 'ECDSA or EdDSA: len(n) >= 224'), disallow_sha1 (a SHA-1 certificate signature is SHA-1 signature generation). This standard governs algorithms and key lengths, not TLS versions, so protocols are unconstrained.",
+  "cipher_tags": {
+    "disallow": [
+      "rc4",
+      "3des",
+      "des",
+      "export",
+      "null",
+      "anon",
+      "md5"
+    ]
+  },
+  "signature_algorithms": {
+    "disallow": [
+      "rsa_pkcs1_sha1",
+      "ecdsa_sha1",
+      "rsa_pkcs1_md5"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 224,
+    "disallow_sha1": true
+  },
+  "minimum_security_strength": 112
+}

@@ -1,0 +1,39 @@
+{
+  "name": "ENS (Esquema Nacional de Seguridad)",
+  "authority": "CCN (Spain)",
+  "kind": "algorithm-strength",
+  "edition": "CCN-STIC-807, Mayo 2022; Real Decreto 311/2022",
+  "reference": "CCN-STIC-807 'Criptología de empleo en el ENS' (Mayo 2022) §4.1 TLS: ¶61 (TLS 1.2/1.3 only), ¶63 (no NULL/anon/unauthorised), Tabla 4-1 (TLS 1.2 authorised suites) and Tabla 4-2 (TLS 1.3 authorised suites); §3 tables 3-2 (RSA) and 3-4 (curves); ¶25 (SHA-1). Legal basis: RD 311/2022 (ENS) mp.com. Effective strength for category MEDIA/ALTA per the R category (≥128 bits).",
+  "url": "https://www.ccn-cert.cni.es/es/series-ccn-stic/800-guia-esquema-nacional-de-seguridad/513-ccn-stic-807-criptologia-de-empleo-en-el-ens.html",
+  "summary": "The Spanish public-sector baseline. TLS 1.2/1.3 with the Recomendado cipher suites of Tables 4-1/4-2, RSA >= 3000-bit certificates, 128-bit strength.",
+  "notes": "¶61: 'Deberán utilizarse versiones de TLS 1.2 y 1.3 y no se autoriza el uso de versiones TLS inferiores.' cipher_suites.allow is the Recomendado (R) rows only: the eight ECDHE AEAD suites in Tabla 4-1 marked R, plus all five TLS 1.3 suites of Tabla 4-2 (all marked R). The Legacy (L) rows of Tabla 4-1 (the CBC, DHE and static-RSA suites) are omitted because §3 ¶10 defines the L category with 'periodo de validez hasta 2025 (31 de [diciembre])', a window that has now closed. ChaCha20-Poly1305 IS authorised (¶50 and Tabla 4-2), unlike BSI/FIPS. ¶63 forbids NULL/anon suites and any suite whose primitives are not authorised in §3 (RC4, IDEA, DES...), which the allowlist enforces implicitly. minimum_security_strength 128: the R category is 'una fortaleza [...] de 128 bits o más'. certificate min_rsa_bits 3000: Tabla 3-2 R row 'n >= 3000'; min_ec_bits 256: Tabla 3-4 R curves (Brainpool/NIST P-256 and up). disallow_sha1: ¶25 'No se autoriza el uso de la función SHA-1, salvo en construcciones HMAC'. FLAG: CCN's RSA floor is 'n >= 3000', very slightly below NIST's 3072->128-bit threshold used by strength.py, so a hypothetical 3000-3071-bit RSA key (not used in practice) could trip the strength gate while passing min_rsa_bits; real 3072-bit keys satisfy both. Certification under op.pl.5 (CPSTIC) cannot be checked over the network.",
+  "protocols": {
+    "allow": [
+      "tls1_2",
+      "tls1_3"
+    ]
+  },
+  "cipher_suites": {
+    "allow": [
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CCM",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CCM",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_AES_128_CCM_SHA256",
+      "TLS_AES_128_CCM_8_SHA256"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 3000,
+    "min_ec_bits": 256,
+    "disallow_sha1": true
+  },
+  "minimum_security_strength": 128
+}

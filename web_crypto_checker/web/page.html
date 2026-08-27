@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>webServerCryptoChecker</title>
+<style>
+  :root { --bg:#0f1419; --card:#171e26; --ink:#e6e6e6; --dim:#9aa4ae; --line:#2a3540;
+          --accent:#4db6ac; --bad:#e57373; --ok:#81c784; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:880px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:1.5rem; margin:.2rem 0 0; }
+  h1 small { color:var(--dim); font-weight:normal; font-size:.9rem; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:16px 0; padding:12px 14px;
+             background:var(--card); }
+  legend { padding:0 6px; color:var(--accent); font-weight:600; }
+  label { display:block; margin:8px 0 2px; color:var(--dim); font-size:.85rem; }
+  input[type=text], input[type=number], textarea, select {
+    width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:6px;
+    background:var(--bg); color:var(--ink); font:inherit; }
+  textarea { font-family:ui-monospace, monospace; min-height:96px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:130px; }
+  .profiles { max-height:230px; overflow:auto; border:1px solid var(--line); border-radius:6px;
+              padding:6px 10px; background:var(--bg); }
+  .profiles label { display:flex; gap:8px; align-items:baseline; margin:4px 0; color:var(--ink);
+                    font-size:.85rem; }
+  .profiles small { color:var(--dim); }
+  button { padding:10px 18px; border:0; border-radius:6px; background:var(--accent);
+           color:#08312d; font:inherit; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #status { margin:14px 0; padding:12px 14px; border-radius:8px; background:var(--card);
+            border:1px solid var(--line); display:none; }
+  #status.err { border-color:var(--bad); color:var(--bad); }
+  progress { width:100%; height:10px; }
+  #downloads { display:none; margin-top:10px; }
+  #downloads a { display:inline-block; margin:4px 8px 4px 0; color:var(--accent); }
+  .note { color:var(--dim); font-size:.8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>webServerCryptoChecker <small id="version"></small></h1>
+  </div>
+  <p class="note">The same scan the command line runs, from a form. One scan,
+     every report format at download time.</p>
+
+  <form id="form">
+    <fieldset>
+      <legend>Targets</legend>
+      <label for="targets">One or more, separated by spaces
+        (host, host:port, https://host/path, IP, [IPv6]:port)</label>
+      <input type="text" id="targets" placeholder="example.com 192.0.2.10:8443">
+      <label for="inventory">…or paste an inventory
+        (one target per line; labels and comments work as in a file)</label>
+      <textarea id="inventory" spellcheck="false"></textarea>
+      <div class="row">
+        <div><label for="port">Default port(s)</label>
+             <input type="text" id="port" value="443" placeholder="443,8443"></div>
+        <div><label for="sni">SNI override</label>
+             <input type="text" id="sni" placeholder="name to send when scanning by IP"></div>
+        <div><label for="timeout">Timeout (s)</label>
+             <input type="number" id="timeout" value="10" min="0.1" step="0.1"></div>
+        <div><label for="concurrency">In parallel</label>
+             <input type="number" id="concurrency" value="4" min="1"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Standards</legend>
+      <label>Evaluate against these compliance profiles
+        (shown in the report; all endpoints, none required)</label>
+      <div class="profiles" id="profile_list"></div>
+      <p class="note">Active probes (Heartbleed, ROBOT, CCS) stay a deployment
+        decision, not a form field. History and comparison stay on the command
+        line: they need the operator's files.</p>
+    </fieldset>
+
+    <button type="submit" id="go">Scan</button>
+  </form>
+
+  <div id="status">
+    <div id="status_text"></div>
+    <progress id="bar" value="0" max="1"></progress>
+    <div id="downloads"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const token = new URLSearchParams(location.search).get("token") || "";
+const headers = token ? { "X-Auth-Token": token } : {};
+let meta = { formats: [], profiles: [] };
+
+function profileRow(container, profile) {
+  const label = document.createElement("label");
+  const box = document.createElement("input");
+  box.type = "checkbox"; box.value = profile.id; box.name = "evaluate";
+  const text = document.createElement("span");
+  text.textContent = profile.id + " — " + profile.name +
+    (profile.edition ? " (" + profile.edition + ")" : "");
+  const who = document.createElement("small");
+  who.textContent = " · " + profile.authority;
+  label.append(box, text, who);
+  container.append(label);
+}
+async function boot() {
+  const response = await fetch("/api/meta", { headers });
+  meta = await response.json();
+  $("version").textContent = "v" + meta.version;
+  $("profile_list").replaceChildren();
+  meta.profiles.forEach((p) => profileRow($("profile_list"), p));
+}
+
+function picked(name) {
+  return [...document.querySelectorAll(`input[name=${name}]:checked`)].map((b) => b.value);
+}
+
+async function poll(id) {
+  const response = await fetch("/api/scan/" + id, { headers });
+  const status = await response.json();
+  $("bar").max = status.total; $("bar").value = status.done;
+  if (status.status === "running") {
+    $("status_text").textContent = `Scanning… ${status.done} of ${status.total}`;
+    setTimeout(() => poll(id), 700);
+    return;
+  }
+  $("go").disabled = false;
+  if (status.status === "error") {
+    $("status").classList.add("err");
+    $("status_text").textContent = `The scan failed: ${status.error}`;
+    return;
+  }
+  const s = status.summary;
+  let line = `Done: ${s.total - s.unreachable}/${s.total}`;
+  if (s.unreachable) line += ` (${s.unreachable} unreachable)`;
+  if (s.average_score !== null) line += ` — average score ${s.average_score}`;
+  if (s.profiles_failed) line += ` — a required standard is not met`;
+  $("status_text").textContent = line;
+  const downloads = $("downloads");
+  downloads.replaceChildren(document.createTextNode("Download: "));
+  meta.formats.forEach((format) => {
+    const a = document.createElement("a");
+    a.textContent = format;
+    a.href = `/api/scan/${id}/report?format=${format}` + (token ? `&token=${token}` : "");
+    if (token) {
+      a.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const r = await fetch(`/api/scan/${id}/report?format=${format}`, { headers });
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const ghost = document.createElement("a");
+        ghost.href = url;
+        ghost.download = (r.headers.get("Content-Disposition") || "")
+          .split('filename="')[1]?.replace('"', "") || `scan.${format}`;
+        ghost.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+    downloads.append(a);
+  });
+  downloads.style.display = "block";
+}
+
+$("form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  $("go").disabled = true;
+  $("status").style.display = "block";
+  $("status").classList.remove("err");
+  $("downloads").style.display = "none";
+  $("status_text").textContent = "…";
+  const body = {
+    targets: $("targets").value.split(/\s+/).filter(Boolean),
+    inventory: $("inventory").value,
+    port: $("port").value, sni: $("sni").value,
+    timeout: Number($("timeout").value), concurrency: Number($("concurrency").value),
+    profiles: picked("evaluate"),
+  };
+  const response = await fetch("/api/scan", {
+    method: "POST", headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    $("go").disabled = false;
+    $("status").classList.add("err");
+    $("status_text").textContent = payload.error;
+    return;
+  }
+  poll(payload.id);
+});
+
+boot();
+</script>
+</body>
+</html>

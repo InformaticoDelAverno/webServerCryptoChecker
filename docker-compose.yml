@@ -1,0 +1,39 @@
+# Web interface of webServerCryptoChecker, to bring up in one shot.
+#
+#   docker compose up -d --build     build if needed and start in the background
+#   docker compose down              stop and clean up
+#   docker compose logs -f           follow the log
+#
+# Starts OPEN by default (no token): anyone who reaches the port uses it, no
+# sign-up, no users -- the convenient shape on a trusted local network. To close
+# it, give it a token and every /api call will require X-Auth-Token:
+#
+#   WEB_CRYPTO_CHECKER_WEB_TOKEN=a-secret docker compose up -d
+#
+# The service scans whatever the container can reach: published without a token it
+# is an SSRF machine. Use it on an internal network or behind your TLS proxy. For
+# public exposure, also set WEB_CRYPTO_CHECKER_WEB_BLOCK_PRIVATE=1 and start it
+# with no route to your private ranges (egress-controlled), the only hard
+# guarantee against SSRF.
+
+services:
+  web:
+    build: .
+    image: webservercryptochecker-web
+    ports:
+      # Change the published port with WCC_WEB_PORT=9000 docker compose up -d
+      - "${WCC_WEB_PORT:-8443}:8443"
+    environment:
+      # Empty = open. Give it a value to require X-Auth-Token across the API.
+      WEB_CRYPTO_CHECKER_WEB_TOKEN: "${WEB_CRYPTO_CHECKER_WEB_TOKEN:-}"
+      # 1 = refuse internal targets (private/loopback/link-local/reserved).
+      WEB_CRYPTO_CHECKER_WEB_BLOCK_PRIVATE: "${WEB_CRYPTO_CHECKER_WEB_BLOCK_PRIVATE:-}"
+      # Optional: a PEM bundle of roots to validate chains against. Mount it below
+      # and point this at the in-container path (else the system store is used).
+      WEB_CRYPTO_CHECKER_WEB_CA_BUNDLE: "${WEB_CRYPTO_CHECKER_WEB_CA_BUNDLE:-}"
+    # Your own trust bundle or detection plugins enter by volumes, like the CLI.
+    # Uncomment and add WEB_CRYPTO_CHECKER_WEB_PLUGIN_DIR above as needed:
+    # volumes:
+    #   - ./roots.pem:/roots.pem:ro
+    #   - ./my-plugins:/plugins:ro
+    restart: unless-stopped

@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "web-crypto-checker"
+version = "0.1.0"
+description = "Audit the cryptography offered by web servers: TLS versions, cipher suites, certificates and the HTTP security layer -- secure / weak / insecure / post-quantum readiness."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+keywords = ["tls", "https", "web", "security", "audit", "cryptography", "post-quantum", "hardening"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: System :: Networking :: Monitoring",
+]
+# Intentionally zero runtime dependencies: the tool must run on a bare
+# distribution Python. The TLS records and the cryptography needed
+# to enumerate what a server offers are implemented in this package, not pulled
+# from OpenSSL, so the same probe can reach a legacy server a modern OpenSSL
+# would refuse to speak to.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/CHANGEME/webServerCryptoChecker"
+Source = "https://github.com/CHANGEME/webServerCryptoChecker"
+
+[project.scripts]
+web-crypto-checker = "web_crypto_checker.cli:main"
+# The MCP server (same scan, driven by an LLM over stdio). Installing the package
+# leaves this command on the PATH, so an MCP client config is just its name --
+# the machine-facing sibling of `web-crypto-checker`. `python -m
+# web_crypto_checker.mcp` is the equivalent when running from the repository.
+web-crypto-checker-mcp = "web_crypto_checker.mcp.server:main"
+
+# Found rather than listed by hand: a hand-written list drifts, and a package
+# missing from it makes an installed wheel die on import while the repository
+# keeps working because the directory is simply there. tests/test_packaging.py
+# holds this against the tree.
+[tool.setuptools.packages.find]
+include = ["web_crypto_checker*"]
+
+[tool.setuptools.package-data]
+# setuptools globs each pattern with "*" NOT crossing "/", so every data
+# SUBDIRECTORY needs its own line -- "data/*.json" alone silently drops the
+# conformance profiles and the i18n overlays from a built wheel, and a missing
+# profile looks exactly like a profile nobody defined. tests/test_packaging.py
+# holds these patterns to every runtime data file in the tree so this can't
+# regress.
+web_crypto_checker = [
+    "data/*.json",
+    "data/i18n/*.json",
+    # One directory per profile, one file per edition (id@edition), each with its
+    # own README -- so both need a nested pattern; a flat data/profiles/ glob
+    # would now match nothing and drop every profile from the wheel.
+    "data/profiles/*/*.json",
+    "data/*.md",
+    "data/i18n/*.md",
+    "data/profiles/*.md",
+    "data/profiles/*/*.md",
+    # The web front end's single self-contained page, served by web/server.py.
+    "web/*.html",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+    "C401", "C408",
+    # The three rules that rewrite annotations for a Python this tool does not
+    # require yet. requires-python is ">=3.9", where `dict[str, int]` works in
+    # an annotation -- every module has `from __future__ import annotations` --
+    # and does NOT work where the expression is evaluated: a cast(), a TypeVar
+    # bound, a runtime isinstance. They come back the day requires-python does.
+    "UP006",  # typing.Dict -> dict
+    "UP045",  # Optional[X] -> X | None
+    "UP035",  # deprecated typing imports
+]
+
+[tool.mypy]
+# No python_version: mypy no longer accepts 3.9. The promise that this runs on
+# 3.9 is kept by the CI job that runs the suite on a real 3.9, not by the type
+# checker.
+warn_unused_configs = true
+disallow_untyped_defs = true
+warn_return_any = true
+no_implicit_optional = true

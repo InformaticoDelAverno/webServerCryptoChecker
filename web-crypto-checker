@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""Run webServerCryptoChecker straight from a git checkout, without installing it.
+
+    ./web-crypto-checker example.com
+
+Installed users get the same command from ``pip install .``; this wrapper only
+exists so the repository can be cloned onto a host and used immediately.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from web_crypto_checker.cli import main  # noqa: E402  (import after sys.path fix)
+
+if __name__ == "__main__":
+    sys.exit(main())

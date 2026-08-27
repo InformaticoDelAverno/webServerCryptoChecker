@@ -1,0 +1,79 @@
+{
+  "name": "FIPS 140-3 approved algorithms",
+  "authority": "NIST",
+  "kind": "algorithm-strength",
+  "edition": "FIPS 140-3 Annex A, with SP 800-56A Rev. 3, FIPS 186-5 and SP 800-38D",
+  "reference": "FIPS 140-3 Annex A (approved security functions); SP 800-56A Rev. 3 Appendix D (approved ECC curves: Table 24; approved FFC safe-prime groups: Table 26); FIPS 186-5 §1 (approved signatures RSA/ECDSA/EdDSA; DSA no longer approved for generation); SP 800-38D (GCM is an approved AEAD mode of AES).",
+  "url": "https://csrc.nist.gov/projects/cryptographic-module-validation-program",
+  "summary": "Only FIPS-approved security functions. AES in any approved mode; NIST curves and RFC 7919 safe-prime groups; RSA/ECDSA/EdDSA signatures. Notably excludes ChaCha20-Poly1305, which has no NIST approval.",
+  "notes": "cipher_suites.allow is every AES suite (SP 800-38D approves AES-GCM; AES-CBC and AES-CCM are approved AES modes; HMAC-SHA-1 is approved for MAC use) with an authenticated key establishment, i.e. every AES suite the scanner knows except the anonymous ones. ChaCha20-Poly1305 has no FIPS approval and is therefore excluded -- which a shape-tag allowlist could not express, since AES and ChaCha20 share the 'aead' tag. groups.allow: SP 800-56A Rev. 3 Table 24 approves the NIST curves (P-224/256/384/521 = secp224r1/secp256r1/secp384r1/secp521r1) and Table 26 approves the RFC 7919 safe-prime groups (ffdhe2048-8192); the RFC 7748 curves x25519/x448 are NOT in SP 800-56A and are excluded. signature_algorithms.allow: FIPS 186-5 §1 approves RSA, ECDSA and EdDSA (Ed25519/Ed448); DSA 'is no longer ... approved ... for digital signature generation' and SHA-1/MD5 signatures are not approved. certificate min_rsa_bits 2048, min_ec_bits 224 (112-bit floor). FLAG: FIPS 140-3 is about a validated cryptographic MODULE, not only algorithm names -- treat a pass here as necessary, not sufficient, and confirm against the module's CMVP security policy. Validated modules vary and some omit EdDSA.",
+  "cipher_suites": {
+    "allow": [
+      "TLS_AES_128_CCM_8_SHA256",
+      "TLS_AES_128_CCM_SHA256",
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+      "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
+      "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_RSA_WITH_AES_128_CBC_SHA256",
+      "TLS_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_RSA_WITH_AES_256_CBC_SHA256",
+      "TLS_RSA_WITH_AES_256_GCM_SHA384"
+    ]
+  },
+  "groups": {
+    "allow": [
+      "secp256r1",
+      "secp384r1",
+      "secp521r1",
+      "secp224r1",
+      "ffdhe2048",
+      "ffdhe3072",
+      "ffdhe4096",
+      "ffdhe6144",
+      "ffdhe8192"
+    ]
+  },
+  "signature_algorithms": {
+    "allow": [
+      "rsa_pkcs1_sha256",
+      "rsa_pkcs1_sha384",
+      "rsa_pkcs1_sha512",
+      "rsa_pss_rsae_sha256",
+      "rsa_pss_rsae_sha384",
+      "rsa_pss_rsae_sha512",
+      "rsa_pss_pss_sha256",
+      "rsa_pss_pss_sha384",
+      "rsa_pss_pss_sha512",
+      "ecdsa_secp256r1_sha256",
+      "ecdsa_secp384r1_sha384",
+      "ecdsa_secp521r1_sha512",
+      "ed25519",
+      "ed448"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 224,
+    "disallow_sha1": true
+  },
+  "minimum_security_strength": 112
+}

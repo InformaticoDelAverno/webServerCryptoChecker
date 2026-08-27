@@ -1,0 +1,26 @@
+# Inventario de ejemplo para webServerCryptoChecker.
+#
+#   web-crypto-checker -f examples/servers.txt --format html -o auditoria.html
+#
+# Un objetivo por línea. '#' inicia un comentario. El primer token es el objetivo;
+# todo lo que le siga (separado por espacios) es una etiqueta que aparece en el
+# informe. No se aceptan credenciales: esto audita lo que un servidor web ofrece
+# en abierto, así que este fichero puede versionarse sin secretos dentro.
+#
+# Formas de nombrar un objetivo: host, host:puerto, https://host/ruta,
+# http://host, IPv4, [IPv6]:puerto e IPv6 desnudo. Un host sin puerto usa el 443
+# (o cada puerto de -p); una URL http usa el 80.
+
+# --- producción ---------------------------------------------------------
+www.example.com                     frontal principal
+api.example.com                     API pública
+example.com:8443                    panel de administración
+https://example.com/login           pantalla de acceso
+
+# --- red interna --------------------------------------------------------
+192.0.2.10                          servidor heredado
+[2001:db8::1]:443                   balanceador (IPv6)
+
+# --- captura ------------------------------------------------------------
+http://legacy.example.com           # solo el 80: comprueba la redirección a HTTPS
+static.example.com                  # sin etiqueta ni comentario

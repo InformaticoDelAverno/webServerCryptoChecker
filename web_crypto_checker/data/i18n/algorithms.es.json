@@ -1,0 +1,93 @@
+{
+  "_comment": "Spanish (Spain) prose overlay for data/algorithms.json. Keyed by the SAME ids/keys as the base policy; only human prose is translated (category labels, security-strength level labels and descriptions, each vulnerability's name/description/remediation, and the metadata prose). Ids, enum codes, algorithm names, scores, weights and detection trees are structural and stay in the base file. A missing or partial overlay falls back to English.",
+  "metadata": {
+    "name": "política por defecto de webServerCryptoChecker",
+    "description": "La política editable: cómo se clasifica cada versión de TLS, conjunto de cifrado, grupo de intercambio de claves y algoritmo de firma, y cómo esas clasificaciones se convierten en una puntuación y una nota. Cambia el criterio editando este fichero, no el código."
+  },
+  "categories": {
+    "recommended": {"label": "Recomendado"},
+    "acceptable": {"label": "Aceptable"},
+    "weak": {"label": "Débil"},
+    "insecure": {"label": "Inseguro"},
+    "informational": {"label": "Informativo"},
+    "unknown": {"label": "Desconocido"}
+  },
+  "security_strength_levels": {
+    "broken": {
+      "label": "Roto",
+      "description": "Menos de 80 bits de fuerza; sin protección significativa."
+    },
+    "legacy": {
+      "label": "Heredado",
+      "description": "80 bits; prohibido por NIST desde 2013."
+    },
+    "transitional": {
+      "label": "Transitorio",
+      "description": "112 bits; aceptable hasta 2030 (NIST SP 800-57)."
+    },
+    "acceptable": {
+      "label": "Aceptable",
+      "description": "128 bits; la base moderna."
+    },
+    "strong": {
+      "label": "Fuerte",
+      "description": "192 bits."
+    },
+    "top": {
+      "label": "Máximo",
+      "description": "256 bits."
+    }
+  },
+  "vulnerabilities": {
+    "CVE-2016-0800": {
+      "name": "DROWN",
+      "description": "El servidor habla SSL 2.0, que está roto en sí mismo y permite a un atacante descifrar sesiones TLS_RSA modernas que compartan su clave RSA (el ataque entre protocolos DROWN).",
+      "remediation": "Deshabilita SSL 2.0 en todo lugar donde se use la clave RSA del certificado."
+    },
+    "CVE-2014-3566": {
+      "name": "POODLE",
+      "description": "SSL 3.0 es vulnerable al ataque de oráculo de relleno POODLE.",
+      "remediation": "Deshabilita SSL 3.0."
+    },
+    "SWEET32": {
+      "name": "Sweet32 (cifrado de bloque de 64 bits)",
+      "description": "3DES tiene un bloque de 64 bits, así que una conexión de larga duración filtra texto en claro mediante una colisión de cumpleaños.",
+      "remediation": "Deshabilita los conjuntos de cifrado 3DES."
+    },
+    "RC4": {
+      "name": "Sesgos del flujo de claves de RC4",
+      "description": "El flujo de claves de RC4 está sesgado, lo que permite recuperar texto en claro repetido.",
+      "remediation": "Deshabilita los conjuntos de cifrado RC4."
+    },
+    "FREAK-LOGJAM": {
+      "name": "Intercambio de claves de grado exportación (FREAK / Logjam)",
+      "description": "Los conjuntos de cifrado de grado exportación usan claves deliberadamente pequeñas y habilitan ataques de degradación.",
+      "remediation": "Deshabilita todos los conjuntos de cifrado de exportación."
+    },
+    "NULL-CIPHER": {
+      "name": "Cifrado en claro (NULL)",
+      "description": "Un cifrado NULL no proporciona cifrado alguno.",
+      "remediation": "Deshabilita los conjuntos de cifrado NULL."
+    },
+    "ANON-CIPHER": {
+      "name": "Intercambio de claves anónimo",
+      "description": "Los conjuntos de cifrado anónimos no proporcionan autenticación y permiten un hombre en el medio indetectable.",
+      "remediation": "Deshabilita los conjuntos de cifrado anónimos."
+    },
+    "DES": {
+      "name": "DES simple",
+      "description": "El DES simple tiene una clave de 56 bits y es forzable por fuerza bruta.",
+      "remediation": "Deshabilita los conjuntos de cifrado DES."
+    },
+    "CVE-2011-3389": {
+      "name": "BEAST",
+      "description": "Los conjuntos CBC en TLS 1.0/1.1 están expuestos a BEAST, aunque la mayoría de los clientes ya lo mitigan.",
+      "remediation": "Prefiere TLS 1.2 o superior y conjuntos de cifrado AEAD."
+    },
+    "NO-FORWARD-SECRECY": {
+      "name": "Intercambio de claves sin secreto hacia adelante",
+      "description": "Un conjunto negocia la clave de sesión con RSA estático (o DH estático), así que grabar el tráfico hoy y robar la clave del servidor más tarde lo descifra. El intercambio de claves con RSA estático es además la superficie del oráculo de relleno Bleichenbacher/ROBOT; confirmar un oráculo en vivo requiere una prueba activa.",
+      "remediation": "Ofrece solo conjuntos ECDHE (o DHE); deshabilita el intercambio de claves con RSA estático y DH estático."
+    }
+  }
+}

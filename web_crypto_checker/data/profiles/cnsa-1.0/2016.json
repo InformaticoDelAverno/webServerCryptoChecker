@@ -1,0 +1,41 @@
+{
+  "name": "CNSA 1.0 (transitional suite)",
+  "authority": "NSA",
+  "kind": "algorithm-strength",
+  "edition": "CNSA Suite 1.0",
+  "reference": "NSA CSA 'Announcing the Commercial National Security Algorithm Suite 2.0' (U/OO/194427-22, PP-22-1338, September 2022), Table V: CNSA 1.0 algorithms.",
+  "url": "https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF",
+  "summary": "The classical NSA suite for national security systems: AES-256, ECDH/ECDSA over P-384, SHA-384, RSA/DH of at least 3072 bits.",
+  "notes": "Table V pins primitives, not TLS suite names, and reads 'Use ... for all classification levels' literally. AES: 'Use 256-bit keys' and SHA: 'Use SHA-384' -> cipher_suites.allow is exactly the AES-256-GCM-SHA384 suites (TLS 1.3 TLS_AES_256_GCM_SHA384 and the ECDHE/DHE AES_256_GCM_SHA384 suites); AES-128 and every SHA-256 suite are excluded. ECDH/ECDSA: 'Use Curve P-384' -> groups.allow secp384r1 only (P-256/P-521/x25519 excluded) and signature_algorithms.allow ecdsa_secp384r1_sha384; DH 'Minimum 3072-bit modulus' -> ffdhe3072 and larger. RSA 'Minimum 3072-bit modulus' with SHA-384 -> rsa_pss_rsae_sha384 / rsa_pss_pss_sha384 / rsa_pkcs1_sha384; min_rsa_bits 3072. min_ec_bits 384, minimum_security_strength 192 (AES-256/P-384/SHA-384). CNSA does not restrict the TLS version, so protocols are unconstrained. Expect most servers to fail: the SHA-384-only, P-384-only reading is deliberately narrow.",
+  "cipher_suites": {
+    "allow": [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
+    ]
+  },
+  "groups": {
+    "allow": [
+      "secp384r1",
+      "ffdhe3072",
+      "ffdhe4096",
+      "ffdhe6144",
+      "ffdhe8192"
+    ]
+  },
+  "signature_algorithms": {
+    "allow": [
+      "ecdsa_secp384r1_sha384",
+      "rsa_pss_rsae_sha384",
+      "rsa_pss_pss_sha384",
+      "rsa_pkcs1_sha384"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 3072,
+    "min_ec_bits": 384,
+    "disallow_sha1": true
+  },
+  "minimum_security_strength": 192
+}

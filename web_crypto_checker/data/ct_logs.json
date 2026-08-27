@@ -1,0 +1,295 @@
+{
+ "source": "https://www.gstatic.com/ct/log_list/v3/log_list.json",
+ "retrieved": "2026-08-17",
+ "note": "Snapshot of known Certificate Transparency logs (RFC 6962). Update by re-fetching the source; SCTs from logs absent here read as 'not verified against a known log', never as invalid.",
+ "logs": {
+  "001a5d1a1c2d9375b6485578f82f71a1ae6eef397d297c8ae3157bcadee1a01e": {
+   "name": "DigiCert 'Wyvern2027h1'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEastxYj1mntGuyv74k4f+yaIx+ZEzlSJ+iVTYWlw8SpSKJ4TfxYWuBhnETlhpyG/5seJn0mOSnVgXsZ1JRflI7g=="
+  },
+  "03802ac262f6e05e03f8bc6f7b9851324fd76a3df5b7595175e222fb8e9bd5f6": {
+   "name": "Sectigo 'Tiger2027h2'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEb0AgkemhsPmYe1goCSy5ncf2lG9vtK6f+SzODKJMYEgPOT+z93cUEKM1EaTuo09rozfdqhjeihIl25y9A3JhyQ=="
+  },
+  "09157f632d46c7f76d95265493bc0f00b395ac5db3a2b26bfb043dba4ac63893": {
+   "name": "IPng Networks 'Halloumi2027h2'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErmKbFkPG7QfQUARhbIik8vVbIkXhK+YMB6TvLZkyhnzv7wedn+l7VChqovZHKOQXmZEd4B+3ljovIpQz2HmyHA=="
+  },
+  "1a8b9d695362d86492a7b9e223606e34ece9e310ba34fb9305785d29ce5757eb": {
+   "name": "IPng Networks 'Gouda2027h2'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPuxPH20sSqUzHGllZceceFvyoSffwBWgX4LKd8wk3A3ayZuwwh2pDuEOsimMxLXFh0IUYz73a9I7kxkUqM+N8w=="
+  },
+  "1a8b9d6b0ffebf81b47939c6d2310a86d6d102d4f046e2182c9de35f5e2625ef": {
+   "name": "IPng Networks 'Gouda2026h2'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjayczmhUMNftWy6VjvYXcTUEpvL8LIAKcYcxrxx5xxQGZEVvhnZeCnXVlsMWhq1h9J55eZfQWM/dqIr6GmoN9Q=="
+  },
+  "1a8b9d6b8dd791d1cd0549edb60355d606b64fad30db71fe788f0fc7c8fbc4b1": {
+   "name": "IPng Networks 'Gouda2027h1'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOh11B2aRT9BiTqo+6kvQ7cSGf819Ait+jGc6AuHlGUXxWCX1YCQ9OFNnr6MUKStyw4sVin5FCvtbke1mctl3gQ=="
+  },
+  "1c897407e6010a01293bb678dfd7a368ceb18cca521dcca4d386e4a32e5b5d04": {
+   "name": "Google 'ParcelYard2027h1' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEX7i7gYwmBxpiLXAlM/VLk4BFzspJRmZA86iReO7NVRlwGL1KWb/Dv5DRXJNBZd+9uREkNUTee5yBy2dRdRGa0w=="
+  },
+  "1c9f682ce9faf0456950f81b968a87dddb3210d84ce6c8b2e382524ac4cf599f": {
+   "name": "Sectigo 'Tiger2027h1'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEmMQofpsDjCVYzF4jXdFWM/ioYBJIPcsQQrNAHE6v4lOsADoI+/jN1lph8x4K3NgnXDXwmyJcFwRYgVOBMhaYhA=="
+  },
+  "1f56d1ab94704a41dd3feafdf4699355302c1431bfe61346089fffae795dcc2f": {
+   "name": "Sectigo 'Sabre2026h2'",
+   "operator": "Sectigo",
+   "state": "readonly",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzjXK7DkHgtp3J4bk8n7F3Djym6mrjKfA7YMePmobwPCVVroyM0x1fAkH6eE+ZTVj8Em+ctGqna99CMS0jVk9cw=="
+  },
+  "1fb0f8a92d8adda121776c05e2aa2e15bacbc62b65393695576aaab52e11d11d": {
+   "name": "DigiCert 'sphinx2027h2'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUCe23M889mAsUVeTTBcNsAmP374ZWQboLdR8RdGwM3VZ6P/sDwhrL7wK4zrXPh3HwLDDLxDjvRBeivUSbpZSwA=="
+  },
+  "20f05faaa3a492fc6ac148cc33a20236186b49faa97e6bb3924fb25ec36b1c35": {
+   "name": "Google 'PlumbersArms2026h2' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERcKG6mGyrCTtzkWBNT51LFFsM1lZ3ZPSIoXgVilDtnY0dyhwKSX7jomkXvdyqWr8DOP3HA6I6kzmREX5wpUvug=="
+  },
+  "25b7efdea1130193ed93079770aa322a26620de35ac8aa7c75197de0b1a9e065": {
+   "name": "TrustAsia 'log2026b'",
+   "operator": "TrustAsia",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEDxKMqebj7GLu31jIUOYmcHYQtwQ5s6f4THM7wzhaEgBM4NoOFopFMgoxqiLHnX0FU8eelOqbV0a/T6R++9/6hQ=="
+  },
+  "26e3646e58692123bc343f4724359b3792cd245a88d815d39333fd9918ab4723": {
+   "name": "IPng Networks 'Halloumi2026h2a'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiGh4zMsdukTgrdk9iPIwz9OfU9TQVi4Mxufpmnlrzv3ivJcxVhrST4XQSeQoF5LlFVIU6PL4IzrYl12BUWn9rQ=="
+  },
+  "2ed6a44deb8f0c864667769c4edd041f84236755fa3aaca634d0935dfcd59a70": {
+   "name": "Bogus placeholder log to unbreak misbehaving CT libraries",
+   "operator": "Geomys",
+   "state": "retired",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEj4lCAxWCY6SzIthkqZhwiUVzcK62i6Fc+/YS0WHaN6jjO1ITUFuu8beOiU9PdeNmdalZcC3iWovAfApvXS33Nw=="
+  },
+  "337a9ec7cae6a9048b752f2d93ae7e4b2a902d21b497129d83e279c753c92f8c": {
+   "name": "Google 'PlumbersArms2027h2' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHCu5hooSXlk8FAiSkoWiZJ5G9GzCiJhj3eoJ9p3F3ZzV2QgcgxWWI9f75vnFgygju+baK11dsf3bXHAo/+TL/Q=="
+  },
+  "37aa07cc216f2e6d919c709d24d8f731b00f2b147c621cc091a5fa1a84d816dd": {
+   "name": "DigiCert 'Wyvern2027h2'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuOg8hcgaYT/MShxpag2Hige0zsLzz8vOLZXp6faCdzM+Mn/njyU9ROAuwDxuu88/Grxn46kmehdOKVDFexbdSg=="
+  },
+  "44c2bd0ce9140e64a5c94a01930a5aa1bb35970e00ee111689682a1c44d7b566": {
+   "name": "Google 'Xenon2027h1'",
+   "operator": "Google",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/6WcA4VRSljIfTdY48+pFRLLtLrmTb88cGDdl8Gv3E2LduG4jgJ3AK5iNMFGhpbRRLi5B3rPlBaXVywuR5IFDg=="
+  },
+  "44e822fc2bab0e92eed0e9fad69664602776d01760e0890509c923a1b03fc37f": {
+   "name": "IPng Networks 'Halloumi2027h1'",
+   "operator": "IPng Networks",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEw5SUl2yfd5TFSqUGv7A+I5+TpLe+zEccmtWVQakQQtOHYKqH8TbycalFx5xaqE5PU4NEwwnAJ9FWeT/6QaovZw=="
+  },
+  "46a23967c60db64687c66f3df999947693a6a611208457d555e7e3d0a1d9b646": {
+   "name": "DigiCert 'sphinx2027h1'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvirIq1XPwgwG7BnbMh2zoUbEt+T8z8XAtg9lo8jma+aaTQl8iVCypUFXtLpt4/SHaoUzbvcjDX/6B1IbL3OoIQ=="
+  },
+  "46af863d3b3ee59fa577dea8245d36b0d9ed22a223f4617741229452ee95505f": {
+   "name": "Geomys 'Tuscolo2026h2'",
+   "operator": "Geomys",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaA6P0i7JTsd9XfzF1/76avRWA3XXI4NStsFO/aFtBp6SY7olDEMiPSFSxGzFQjKA1r9vgG/oFQwurlWMy9FQNw=="
+  },
+  "4c63dc98e59c1dab88f61e8a3ddeae8fab44a3377b5f9b94c3fba19cfcc1be26": {
+   "name": "Cloudflare 'Nimbus2027'",
+   "operator": "Cloudflare",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYjd/jE0EoAhNBbfcNhrTb7F0x10KZK8r2SDjx1GdjJ75hJrHx2OCQ+BXRjXi+czoREN1u0j9cWl8d6OoPMPogQ=="
+  },
+  "573448cc6e1d2c0dc94b69f287d1efe483c7a25c50c5320bbb3adea76f6eb041": {
+   "name": "TrustAsia Luoshu2027",
+   "operator": "TrustAsia",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEumSYzy6dUQlwTckPzKMKApMRinqxHIBlLfmrvx1SdMH1RTACi1wb1V18ss8YjlaC7Pch2OQa8OfRevub4Y9BDQ=="
+  },
+  "596e6c338694b25972a256c8a0e8dd904a76e8083dda873b01083828143cee59": {
+   "name": "Geomys 'Tuscolo2027h1'",
+   "operator": "Geomys",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOYwwGoaNpZ/SQW0VNGICP7wGRQsSeEowTRl4DPSdPjSkO/+ouvFH78I8sQTR3FWPZDScALbclBqnqL0ptY8beA=="
+  },
+  "5ff9c0fba42dac78ce6442eb19ace081a29bd4e2fb53af0c633079e5058204c9": {
+   "name": "Google 'PlumbersArms2027h1' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAKYYdjIeQwDP0RIY9mhAVntX5s2ObMc2F6u8cELSbhvavljWD/OesJZHUtqQjBXE5Ekbpiq6nchmaVnEHHpJmw=="
+  },
+  "604c9aaf7a7f775f01d406fc920dc899eb0b1c7df8c9521bfafa17773b978bc9": {
+   "name": "Sectigo 'Elephant2027h1'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4fu36JygUwaaVO+ddWJ97FJZlA5SjPLmT+RHwg0pavkIrbT1b5LNQrsaEw0CoGraf7BkzKZf7PC8gYAScw2woA=="
+  },
+  "6984b7233cb274b2d1467da5e040d71feba90a21e78865374ab9f9bcf8687237": {
+   "name": "Google 'ParcelYard2027h2' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+CTFsoroxXi53eLT+x2T4gsMKOcqzYEhqSLjyF6uVfdgF8yBeyA2cDWsu6nmhKGhqyoohwLh3PPgXdltfPP3BA=="
+  },
+  "6cfe501943a85ea916bc52d133e4dcc91ef1411c7d258420d173809e1818eb3a": {
+   "name": "Let's Encrypt 'Sycamore2026h2'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwR1FtiiMbpvxR+sIeiZ5JSCIDIdTAPh7OrpdchcrCcyNVDvNUq358pqJx2qdyrOI+EjGxZ7UiPcN3bL3Q99FqA=="
+  },
+  "74db9d58f7d47e9dfd787a162a991c18cf698da7c729918c9a18b0450dba44bc": {
+   "name": "TrustAsia 'log2026a'",
+   "operator": "TrustAsia",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEp056yaYH+f907JjLSeEAJLNZLoP9wHA1M0xjynSDwDxbU0B8MR81pF8P5O5PiRfoWy7FrAAFyXY3RZcDFf9gWQ=="
+  },
+  "8eca470bacde6af3a206b0a47a84b746fe1fc6bf953e25e69b4ee40248f3c6e8": {
+   "name": "Let's Encrypt 'Sycamore2027h1'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWrGdYyZYB7teCS4K/oKIsbV0yVBSgjlOwO22OOCoA6Y252QhFzC8Wg7oVXVKqfkWaSaM/n+3pfCBf4BAkpdx8g=="
+  },
+  "944e4387faecc1ef81f3192426a8186501c7d35f3802013f72677d55372e19d8": {
+   "name": "DigiCert 'Sphinx2026h2'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEquD0JkRQT/2inuaA4HC1sc6UpfiXgURVQmQcInmnZFnTiZMhZvsJgWAfYlU0OIykOC6slQzr7U9kvEVC9wZ6zQ=="
+  },
+  "94b1c18ab0d057c47be0ac040e1f2cbc8dc375727bc951f20a526126863ba73c": {
+   "name": "Sectigo 'Mammoth2026h2'",
+   "operator": "Sectigo",
+   "state": "readonly",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7INh8te0u+TkO+vIY3WYz2GQYxQ9XyLfdLpQp1ibaX3mY4lt2ddRhD/4AtjI/8KXceV+J/VysY8kJ1cKDXTAtg=="
+  },
+  "a2490cdcdb8e33a400321760d6d4d51a2036191ea77d968be26a8a00f6fffff7": {
+   "name": "Sectigo 'Elephant2027h2'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECTPhpJnRFroRRpP/1DdAns+PrnmUywtqIV+EeL4Jg8zKouoW7kuAkYo+kZeoHtyK7CBhflIlMk7T2Qrn4w/t8g=="
+  },
+  "a2810018734e176e1d47e09540f381ba546697cd63a84350716eb8094edaf10d": {
+   "name": "Let's Encrypt 'Willow2027h1'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzsMKtojO0BVB4t59lVyAhxtqObVA+wId5BpJGA8pZrw5GTjzuhpvLu/heQGi0hHCeislkDe34N/2D0SwEUBE0w=="
+  },
+  "a695a2ad926d6f996e8efc49014257d8bbf046a7d62589b88dc2d7876c78e52f": {
+   "name": "Let's Encrypt 'Willow2027h2'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYbMDg0qQEEYjsTttdDlouTKhg3fRiMJYNE+Epr/2bXyeQdQOHKQNKv5sbIKxjtE/5Vqo9YjQbnaOeH4Wm4PhdQ=="
+  },
+  "a826cbe30ac6351246533fe065f14f19d96e190813c41dd96d7900b3123c5527": {
+   "name": "Let's Encrypt 'Willow2026h2'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEp8wH8R6zfM+UhsQq5un+lPdNTDkzcgkWLi1DwyqU6T00mtP5/CuGjvpw4mIz89I6KV5ZvhRHt5ZTF6qe24pqiA=="
+  },
+  "acab30706cebec8431f413d2f4915f111e422443b1f2a68c4f3c2b3ba71e02c3": {
+   "name": "Let's Encrypt 'Oak2026h2'",
+   "operator": "Let's Encrypt",
+   "state": "retired",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEanCds5bj7IU2lcNPnIvZfMnVkSmu69aH3AS8O/Y0D/bbCPdSqYjvuz9Z1tT29PxcqYxf+w1g5CwPFuwqsm3rFQ=="
+  },
+  "af67883b57b04edd8fa6d97ef62ea8eb810ac77160f0245e55d60c2fe785873a": {
+   "name": "Sectigo 'Elephant2026h2'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEO/t4Uwkoou78zkCchh9tfAKbIUJmbOoUAb8szD8StnnHFKAVY5kq1Ljs8YD7CfzdD7xcVjmQYpbtNUhxRMRtmA=="
+  },
+  "badb88a46f9cafa4090e82e59356db6e78b4a53f582db0819795242f29b68c98": {
+   "name": "Google 'ParcelYard2026h2' log",
+   "operator": "Google",
+   "state": "qualified",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEP2H56bHx6pPm5mCku6PFpeRuA5Ux0gs8iwXIVhvVdbojs0pPwZqLtlIEoJNbjxMEePTYo/qDW85AjhMJITlavA=="
+  },
+  "c2317e574519a345ee7f38deb29041ebc7c2215a22bf7fd5b5ad769ad90e52cd": {
+   "name": "DigiCert 'Wyvern2026h2'",
+   "operator": "DigiCert",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEenPbSvLeT+zhFBu+pqk8IbhFEs16iCaRIFb1STLDdWzL6XwTdTWcbOzxMTzB3puME5K3rT0PoZyPSM50JxgjmQ=="
+  },
+  "c8a3c47fc7b3adb9356b013f6a7a126de33a4e43a5c646f997ad3975991dcf9a": {
+   "name": "Sectigo 'Tiger2026h2'",
+   "operator": "Sectigo",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfJFUD/FRkonvZIA9ZT1J3yvA4EpSp3innbIVpMTDR1oCe5vguapheQ7wYiWaCES1EL1B+2BEC+P5bUfwF44lnA=="
+  },
+  "cb38f715897c84a1445f5bc1ddfbc96ef29a59cd470a690585b0cb14c31458e7": {
+   "name": "Cloudflare 'Nimbus2026'",
+   "operator": "Cloudflare",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2FxhT6xq0iCATopC9gStS9SxHHmOKTLeaVNZ661488Aq8tARXQV+6+jB0983v5FkRm4OJxPqu29GJ1iG70Ahow=="
+  },
+  "d2fc652fa5f9b738b83755fa5eb15f0b45253f4e8fa3b9b64fd4de5662d18708": {
+   "name": "Bogus RFC6962 log to avoid breaking misbehaving CT libraries",
+   "operator": "IPng Networks",
+   "state": "retired",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELzNWh+BsAk0HnEEE7Zk1bAhdH1SM5udo1+CTF6LGcL6AVVIXSuOF95/Wg0qLZV491QbrNRg06mM6KwEzDXXtqg=="
+  },
+  "d5de55eeba08b60c9ffc18c513be6a60ba004606bc595b96bb44f62cc57d39fa": {
+   "name": "Geomys 'Tuscolo2027h2'",
+   "operator": "Geomys",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIAz2gOD7wIptaiLTnmR4k7AQwp5kFmqmGHY/8JmMJxaSHyAipoFA/YSBCTX7ZowxIkSKpZYGlqLtdLVcLWDS5w=="
+  },
+  "d6d58da9d01753f36a4aa0c7574902afebc7dc2cd38cd9f764c80c89191e9f02": {
+   "name": "Google 'Argon2027h1'",
+   "operator": "Google",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEKHRm0H/zUaFA6Idz5cGvGO3tCPQyfGMgJmVBOPyKAP6mGM1IiNXi4CLomOUyYj0YN74p+eGVApFMsM4h/jzCsA=="
+  },
+  "d76d7d10d1a7f577c2c7e95fd700bff982c9335a65e1d0b3017317c0c8c56977": {
+   "name": "Google 'Argon2026h2' log",
+   "operator": "Google",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEKjpni/66DIYrSlGK6Rf+e6F2c/28ZUvDJ79N81+gyimAESAyeNZ++TRgjHWg9TVQnKHTSU0T1TtqDupFnSQTIg=="
+  },
+  "d809553b944f7affc816196f944f85abb0f8fc5e8755260f15d12e72bb454b14": {
+   "name": "Google 'Xenon2026h2' log",
+   "operator": "Google",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5Xd4lXEos5XJpcx6TOgyA5Z7/C4duaTbQ6C9aXL5Rbqaw+mW1XDnDX7JlRUninIwZYZDU9wRRBhJmCVopzwFvw=="
+  },
+  "e5e36247d92ef4ada38583b53591db729fc2f00ae4b6745174d3ddfc6aa25388": {
+   "name": "Let's Encrypt 'Sycamore2027h2'",
+   "operator": "Let's Encrypt",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEK+2zy2UWRMIyC2jU46+rj8UsyMjLsQIr1Y/6ClbdpWGthUb8y3Maf4zfAZTWW+AH9wAWPLRL5vmtz7Zkh2f2nA=="
+  },
+  "eddaeb815c63213449b47be5077905abd0d93147c27ac5146b3bc58e43e9b6c7": {
+   "name": "TrustAsia 'HETU2027'",
+   "operator": "TrustAsia",
+   "state": "usable",
+   "key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE14jG8D9suqIVWPtTNOL33uXKZ4mUnnOMrIwOWeZU7GtoDRCWIXfy/9/SC8lTAbtP2NOP4wjIufAk6f64sY4DWg=="
+  }
+ }
+}

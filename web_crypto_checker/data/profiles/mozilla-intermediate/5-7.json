@@ -1,0 +1,37 @@
+{
+  "name": "Mozilla TLS — Intermediate",
+  "authority": "Mozilla",
+  "kind": "algorithm-strength",
+  "edition": "5.7",
+  "reference": "Mozilla Server Side TLS guideline, machine-readable version 5.7 (ssl-config.mozilla.org/guidelines/5.7.json), configurations.intermediate.",
+  "url": "https://ssl-config.mozilla.org/guidelines/5.7.json",
+  "summary": "The general-purpose profile: TLS 1.2 and 1.3, forward-secret AEAD suites only (GCM and ChaCha20-Poly1305).",
+  "notes": "Corrected to Mozilla 5.7. protocols.allow [tls1_2, tls1_3] is configurations.intermediate.tls_versions. The cipher allowlist is 5.7's exact list: the three TLS 1.3 suites (configurations.intermediate.ciphersuites) plus configurations.intermediate.ciphers.iana -- all ECDHE/DHE GCM and ChaCha20-Poly1305. FLAG: this corrects the previous file, whose summary said 'CBC allowed'; Mozilla 5.7 Intermediate has NO CBC suite (5.x dropped them), so the faithful encoding is an AEAD/forward-secret allowlist. certificate min_rsa_bits 2048 (rsa_key_size 2048), min_ec_bits 256 (certificate_curves prime256v1/secp384r1), disallow_sha1 (certificate_signatures sha256WithRSAEncryption + ecdsa-with-SHA256/384/512, no SHA-1). hsts_min_age 63072000 and ocsp_staple true are set by 5.7 but reported, not enforced.",
+  "protocols": {
+    "allow": [
+      "tls1_2",
+      "tls1_3"
+    ]
+  },
+  "cipher_suites": {
+    "allow": [
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 256,
+    "disallow_sha1": true
+  }
+}

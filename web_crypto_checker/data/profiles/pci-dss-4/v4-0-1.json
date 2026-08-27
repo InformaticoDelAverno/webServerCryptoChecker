@@ -1,0 +1,34 @@
+{
+  "name": "PCI DSS v4.0.1",
+  "authority": "PCI Security Standards Council",
+  "kind": "algorithm-strength",
+  "edition": "v4.0.1 (2024)",
+  "reference": "PCI DSS v4.0.1, Requirement 4.2.1 (strong cryptography and secure protocols for PAN in transit) and Requirement 2.2.7, with the Appendix G glossary definition of 'Strong Cryptography'; Appendix A2 (SSL/early TLS).",
+  "url": "https://www.pcisecuritystandards.org/document_library/",
+  "summary": "Payment-card baseline: strong cryptography = a minimum of 112 bits of effective key strength; no SSL/early TLS; no weak cipher suites.",
+  "notes": "Appendix G 'Strong Cryptography': 'based on industry-tested and accepted algorithms along with key lengths that provide a minimum of 112-bits of effective key strength and proper key-management practices' -- hence minimum_security_strength 112, certificate min_rsa_bits 2048 and min_ec_bits 224 (both = 112-bit strength). The same entry adds 'It is recommended that all new implementations use a minimum of 128-bits of effective key strength', which is a recommendation this profile reports rather than enforces. Protocols: Appendix A2 'SSL and early TLS must not be used as a security control'; the Req 4.2.1 guidance names 'SSL, SSH v1.0, and early TLS' as having known vulnerabilities. FLAG: the document names 'early TLS' (= TLS 1.0) and SSL, but does NOT name TLS 1.1 anywhere; tls1_1 is disallowed under Req 4.2.1's clause 'does not support ... use of insecure versions' together with its RFC 8996 deprecation, which is derived, not an explicit PCI naming. Cipher tags follow from the 112-bit floor: RC4, single DES and export are below it, three-key TDEA lost NIST approval after 2023, and NULL (no encryption) / anonymous (no authentication) / MD5 are not strong cryptography. disallow_sha1: SHA-1 signatures are no longer industry-accepted. Req 12.3.3 also wants a documented cipher-suite/protocol inventory, which the JSON report serves.",
+  "protocols": {
+    "disallow": [
+      "ssl3",
+      "tls1_0",
+      "tls1_1"
+    ]
+  },
+  "cipher_tags": {
+    "disallow": [
+      "rc4",
+      "3des",
+      "des",
+      "export",
+      "null",
+      "anon",
+      "md5"
+    ]
+  },
+  "certificate": {
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 224,
+    "disallow_sha1": true
+  },
+  "minimum_security_strength": 112
+}

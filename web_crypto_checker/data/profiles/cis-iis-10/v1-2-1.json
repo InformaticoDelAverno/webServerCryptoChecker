@@ -1,0 +1,28 @@
+{
+  "name": "CIS Microsoft IIS 10 Benchmark",
+  "authority": "Center for Internet Security",
+  "kind": "algorithm-strength",
+  "edition": "v1.2.1",
+  "reference": "CIS Microsoft IIS 10 Benchmark v1.2.1: Rec. 7.2/7.3/7.4/7.5 (disable SSL 2.0, SSL 3.0, TLS 1.0, TLS 1.1), Rec. 7.6 (enable TLS 1.2), Rec. 7.7 (disable NULL), Rec. 7.8 (disable DES), Rec. 7.9 (disable RC4), Rec. 7.1 'Ensure HSTS Header is set'.",
+  "url": "https://www.cisecurity.org/cis-benchmarks",
+  "summary": "The IIS 10 hardening baseline. TLS 1.2 enabled with SSL/TLS 1.0/1.1 disabled, NULL/DES/RC4 disabled, and an HSTS header set.",
+  "notes": "protocols.disallow [ssl3, tls1_0, tls1_1]: Rec. 7.3 'Ensure SSLv3 is Disabled', Rec. 7.4 'Ensure TLS 1.0 is Disabled', Rec. 7.5 'Ensure TLS 1.1 is Disabled' (SCHANNEL Enabled=0). Rec. 7.6 'Ensure TLS 1.2 is Enabled'. A disallow list (not an allowlist) is used because this edition has no TLS 1.3 recommendation, so it must not flag a server that also offers TLS 1.3. cipher_tags disallow [null, des, rc4]: Rec. 7.7 'Ensure NULL Cipher Suites is Disabled', Rec. 7.8 'Ensure DES Cipher Suites is Disabled', Rec. 7.9 'Ensure RC4 Cipher Suites is Disabled'. require_hsts with hsts_min_age 1: Rec. 7.1 (Level 2) 'Any value greater than 0 is acceptable' (recommended 480). FLAG: Rec. 7.10 disables the SCHANNEL 'AES 128/128' cipher and Rec. 7.12 (L2) prefers PFS suites by ordering; these are OS-registry/ordering controls not cleanly observable as on-the-wire suite tags, so they are not enforced here. IIS 10 v1.2.1 has NO OCSP stapling recommendation, so none is required.",
+  "protocols": {
+    "disallow": [
+      "ssl3",
+      "tls1_0",
+      "tls1_1"
+    ]
+  },
+  "cipher_tags": {
+    "disallow": [
+      "null",
+      "des",
+      "rc4"
+    ]
+  },
+  "hsts": {
+    "require": true,
+    "min_age": 1
+  }
+}
