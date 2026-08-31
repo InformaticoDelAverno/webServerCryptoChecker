@@ -16,10 +16,11 @@ known vulnerabilities and conformance with the published standards.
 > documentation comes in both languages. The tool is **bilingual**
 > (`--lang en|es`): the wizard, the command help and the human-readable reports
 > come out in the chosen language; the machine-readable formats (JSON, CSV, SARIF,
-> OpenMetrics) stay in English. This is the English manual;
-> **[versión en español](../../README.md)**.
+> OpenMetrics) stay in English.
 
 ---
+
+> **Español:** este manual también está disponible en [español](../es/README.md).
 
 ## Index
 
@@ -40,6 +41,7 @@ known vulnerabilities and conformance with the published standards.
 - [Cookbook: one example per option](#cookbook-one-example-per-option)
 - [Limitations and legal notes](#limitations-and-legal-notes)
 - [License](#license)
+- [Extension guides included](#extension-guides-included)
 
 ---
 
@@ -788,3 +790,23 @@ MIT. See [`LICENSE`](../../LICENSE). The changelog is in
 
 ---
 
+## Extension guides included
+
+The categorized index of the extension manuals is
+[`extender.md`](extender.md); these are its guides, installed beside this manual,
+each in both languages (its Spanish version has the same file name):
+
+- [`como-se-calcula-la-nota.md`](como-se-calcula-la-nota.md)
+- [`politicas.md`](politicas.md)
+- [`politica-algoritmos.md`](politica-algoritmos.md)
+- [`politica-vulnerabilidades.md`](politica-vulnerabilidades.md)
+- [`politica-configuracion.md`](politica-configuracion.md)
+- [`politica-puntuacion.md`](politica-puntuacion.md)
+- [`politica-normativas.md`](politica-normativas.md)
+- [`auditoria-integridad.md`](auditoria-integridad.md)
+- [`plugins.md`](plugins.md)
+- [`plugin-check.md`](plugin-check.md)
+- [`plugin-fleet.md`](plugin-fleet.md)
+- [`plugin-vulnerability.md`](plugin-vulnerability.md)
+- [`uso-avanzado.md`](uso-avanzado.md)
+- [`desarrollo.md`](desarrollo.md)

@@ -1,7 +1,7 @@
 # Conformance profiles
 
 Back to the [manual](README.md) · related: [plugins](plugins.md) ·
-[document provenance](../estandares/README.md) · [Español](../politica-normativas.md).
+[document provenance](../estandares/README.md) · [Español](../es/politica-normativas.md).
 
 A standard is not code of this tool: it is a document someone else maintains and
 revises on their own calendar. That is why **each standard is a directory** under

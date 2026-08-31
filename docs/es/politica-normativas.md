@@ -1,12 +1,12 @@
 # Política de conformidad: los perfiles
 
-Volver al [manual](../README.md) · relacionado: [plugins](plugins.md) ·
-[procedencia de los documentos](estandares/README.md) · [English](en/politica-normativas.md).
+Volver al [manual](README.md) · relacionado: [plugins](plugins.md) ·
+[procedencia de los documentos](../estandares/README.md) · [English](../en/politica-normativas.md).
 
 Una normativa no es código de esta herramienta: es un documento que mantiene otra
 gente y revisa en su propio calendario. Por eso **cada normativa es un directorio**
 bajo
-[`web_crypto_checker/data/profiles/`](../web_crypto_checker/data/profiles/README.md)
+[`web_crypto_checker/data/profiles/`](../../web_crypto_checker/data/profiles/README.md)
 y **cada fichero dentro es una edición**; se **evalúa**, no se compila. Añadir la
 edición del año que viene es añadir un fichero; la del año pasado se queda y se
 sigue pudiendo medir contra ella. Con más de una edición, exactamente una lleva
@@ -64,11 +64,11 @@ mecanismos existen y cada perfil usa el que su documento realmente es.
 **Cada regla se remite a una sección o tabla exactas de un documento real**,
 citadas en `reference`/`notes`. Los documentos fuente (URL, fecha y SHA-256, y
 qué perfil alimenta cada uno) están en
-[`docs/estandares/`](estandares/README.md). No todos permiten redistribuirse
+[`docs/estandares/`](../estandares/README.md). No todos permiten redistribuirse
 (PCI DSS e ISO/IEC son de pago; NIST es de dominio público; CIS es
 CC BY-NC-SA), así que se **citan** y se obtienen de su editor. La tabla completa
 de perfiles está en el
-[README de `data/profiles/`](../web_crypto_checker/data/profiles/README.md).
+[README de `data/profiles/`](../../web_crypto_checker/data/profiles/README.md).
 
 ## Escribir el tuyo
 

@@ -1,7 +1,7 @@
 # Plugins de detección
 
-Volver al [manual](../README.md) · relacionado:
-[política de conformidad](politica-normativas.md) · [English](en/plugins.md).
+Volver al [manual](README.md) · relacionado:
+[política de conformidad](politica-normativas.md) · [English](../en/plugins.md).
 
 La mayoría de las comprobaciones se emparejan de forma declarativa desde la
 política (un nombre, una etiqueta, una versión). Lo que una regla no puede hacer
@@ -29,7 +29,7 @@ NAME = "Algo que una regla no puede expresar"
 SEVERITY = "high"          # info | low | medium | high | critical
 DESCRIPTION = "Qué está mal y por qué importa."
 REMEDIATION = "Qué hacer al respecto."   # opcional
-KIND = "vulnerability"     # opcional: "vulnerability" (por defecto) o "check"
+KIND = "vulnerability"     # opcional: "vulnerability" (por defecto), "check" o "fleet"
 REFERENCES = ["CVE-2017-15361"]          # opcional
 
 def check(server):
@@ -58,6 +58,17 @@ La `ServerView` expone **lo observado, y nada de lo concluido**:
 
 No hay ahí ninguna nota, grado ni veredicto: esa frontera es el punto.
 
+## Los tres tipos
+
+- `check` (y `vulnerability`) miran **un** servidor: reciben la `ServerView` de
+  arriba, una vez por objetivo. Es el 90 % de los casos. La diferencia entre los
+  dos es solo dónde acaba el resultado: `vulnerability` en la lista de
+  vulnerabilidades, `check` en los hallazgos.
+- `fleet` mira **todos los servidores del escaneo a la vez**, una sola vez, para
+  lo que no es propiedad de una máquina sino del conjunto (dos servidores que
+  comparten certificado, por ejemplo). Recibe un `FleetView`, no una
+  `ServerView`, y se explica aparte en [`plugin-fleet.md`](plugin-fleet.md).
+
 ## Cargarlos
 
 ```bash
@@ -65,12 +76,12 @@ web-crypto-checker example.com --plugin-dir ./mis-plugins
 web-crypto-checker --list-plugins        # ver los que se cargarían, y salir
 ```
 
-En la [interfaz web](../README.md#la-interfaz-web) entran por despliegue, con la
+En la [interfaz web](README.md#la-interfaz-web) entran por despliegue, con la
 variable `WEB_CRYPTO_CHECKER_WEB_PLUGIN_DIR`, no por el formulario.
 
 ## Los de serie
 
-Vienen tres, cargados igual que un plugin de terceros (así son también ejemplos
+Vienen cuatro, cargados igual que un plugin de terceros (así son también ejemplos
 trabajados):
 
 - **Simulación de clientes**: qué clientes conocidos (navegadores actuales, Java
@@ -83,3 +94,6 @@ trabajados):
   conocidas, y solo cuando ninguno de sus identificadores está entre los
   autorizados), segura precisamente porque como observación no puede cambiar la
   nota.
+- **Certificado compartido** (`fleet`): el mismo certificado —y por tanto la
+  misma clave privada— presentado por más de un servidor del escaneo. A menudo es
+  deliberado (un balanceador), pero conviene verlo. Ver [`plugin-fleet.md`](plugin-fleet.md).

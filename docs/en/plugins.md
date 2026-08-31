@@ -1,7 +1,7 @@
 # Detection plugins
 
 Back to the [manual](README.md) · related:
-[conformance profiles](politica-normativas.md) · [Español](../plugins.md).
+[conformance profiles](politica-normativas.md) · [Español](../es/plugins.md).
 
 Most checks are matched declaratively from the policy (a name, a tag, a version).
 What a rule cannot do is **compute**: factor a modulus, correlate two
@@ -29,7 +29,7 @@ NAME = "Something a rule cannot express"
 SEVERITY = "high"          # info | low | medium | high | critical
 DESCRIPTION = "What is wrong and why it matters."
 REMEDIATION = "What to do about it."   # optional
-KIND = "vulnerability"     # optional: "vulnerability" (default) or "check"
+KIND = "vulnerability"     # optional: "vulnerability" (default), "check" or "fleet"
 REFERENCES = ["CVE-2017-15361"]          # optional
 
 def check(server):
@@ -58,6 +58,17 @@ The `ServerView` exposes **what was observed, and nothing that was concluded**:
 
 There is no score, grade or verdict in there: that boundary is the point.
 
+## The three types
+
+- `check` (and `vulnerability`) look at **one** server: they receive the
+  `ServerView` above, once per target. It is 90% of the cases. The only
+  difference between the two is where the result ends up: `vulnerability` in the
+  vulnerabilities list, `check` in the findings.
+- `fleet` looks at **all the servers in the scan at once**, once, for what is not
+  a property of a machine but of the set (two servers sharing a certificate, for
+  example). It receives a `FleetView`, not a `ServerView`, and is covered
+  separately in [`plugin-fleet.md`](plugin-fleet.md).
+
 ## Loading them
 
 ```bash
@@ -70,7 +81,7 @@ through the `WEB_CRYPTO_CHECKER_WEB_PLUGIN_DIR` variable, not through the form.
 
 ## The built-in ones
 
-Three ship, loaded exactly like a third-party plugin (so they are also worked
+Four ship, loaded exactly like a third-party plugin (so they are also worked
 examples):
 
 - **Client simulation**: which known clients (current browsers, Java 8/11,
@@ -83,3 +94,6 @@ examples):
   well-known CAs, and only when none of their identifiers is among the
   authorised ones), safe precisely because as an observation it cannot change
   the grade.
+- **Shared certificate** (`fleet`): the same certificate -- and therefore the
+  same private key -- presented by more than one server in the scan. It is often
+  deliberate (a load balancer), but worth surfacing. See [`plugin-fleet.md`](plugin-fleet.md).

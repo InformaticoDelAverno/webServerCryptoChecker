@@ -32,15 +32,18 @@ import os
 import stat
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, cast
 
 from ..models import CaaRecord, CertificateInfo, ClassAssessment, Severity, TargetResult
 from ..tls.constants import cipher_suite_tags
 
 __all__ = [
     "Detected",
+    "FleetView",
+    "ForTarget",
     "Plugin",
     "PluginError",
+    "ScannedServer",
     "ServerView",
     "Undetermined",
     "builtin_directory",
@@ -48,7 +51,7 @@ __all__ = [
     "load_plugins",
 ]
 
-KINDS = ("vulnerability", "check")
+KINDS = ("vulnerability", "check", "fleet")
 
 
 class PluginError(Exception):
@@ -117,6 +120,60 @@ class ServerView:
             if assessment.key == key:
                 return assessment
         return None
+
+
+@dataclass
+class ForTarget:
+    """A fleet finding, and which server it is about.
+
+    A fleet check sees every server, so it has to say who each result belongs
+    to. ``target`` is the address as the report prints it (``str(target)``);
+    anything naming a server the scan did not produce is dropped, not invented.
+    """
+
+    target: str
+    finding: Any
+
+
+@dataclass
+class ScannedServer:
+    """One server in a fleet view: what it is called, and what was seen."""
+
+    target: str
+    """The address as the report prints it."""
+    label: str = ""
+    view: ServerView = field(default_factory=ServerView)
+    """Always present, even for a target that could not be reached.
+
+    An unreachable server has an empty view rather than no view, so a fleet
+    check that walks the scan sees every target it was asked about. The
+    alternative -- dropping the failures -- makes "do all my servers present the
+    same certificate" answer from whichever ones happened to be up.
+    """
+
+
+@dataclass
+class FleetView:
+    """Every server in the scan, for a check that needs more than one.
+
+    Holds the same observations as a :class:`ServerView`, one per server, and
+    the same boundary applies: no score, no grade, no verdict. A fleet check can
+    see that two servers present the same certificate; it cannot see, or change,
+    what either of them was graded.
+    """
+
+    servers: List[ScannedServer] = field(default_factory=list)
+    policy: Any = None
+
+    def __iter__(self) -> Iterator[ScannedServer]:
+        return iter(self.servers)
+
+    def __len__(self) -> int:
+        return len(self.servers)
+
+    def with_certificates(self) -> List[ScannedServer]:
+        """The servers that actually presented a leaf certificate."""
+        return [server for server in self.servers if server.view.leaf is not None]
 
 
 @dataclass

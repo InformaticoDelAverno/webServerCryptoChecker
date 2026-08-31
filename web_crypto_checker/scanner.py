@@ -12,7 +12,7 @@ import socket
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from . import PRODUCT_NAME, __version__, webclient
 from .application.grpc import check_grpc
@@ -615,6 +615,7 @@ def scan(
                 _run_active_probes(result, timeout, translator)
 
     run_plugins(results, plugins)
+    _run_fleet_checks(results, policy, plugins)
 
     duration_ms = int((time.monotonic() - started) * 1000)
     return ScanReport(
@@ -627,3 +628,43 @@ def scan(
         results=results,
         summary=_summarise(results),
     )
+
+
+def _run_fleet_checks(
+    results: Sequence[TargetResult], policy: Any, plugins: Sequence[Any]
+) -> None:
+    """Run the checks that need more than one server, once the scan is done.
+
+    Some problems are not a property of a server: a certificate is only
+    "shared" relative to another one, so this cannot be found while a single
+    target is scanned, however the per-server interface is shaped.
+    """
+    from .plugins import FleetView, ScannedServer, ServerView
+    from .plugins.runner import run_fleet
+
+    if not any(getattr(plugin, "kind", "") == "fleet" for plugin in plugins):
+        return
+
+    # A list per address, not one result: an inventory can name the same server
+    # twice, and dropping the finding for all but the last would be a silent loss.
+    by_target: Dict[str, List[TargetResult]] = {}
+    for result in results:
+        by_target.setdefault(str(result.target), []).append(result)
+    fleet = FleetView(
+        policy=policy,
+        servers=[
+            ScannedServer(
+                target=str(result.target),
+                label=result.target.label or "",
+                view=ServerView.from_result(result) if result.ok else ServerView(),
+            )
+            for result in results
+        ],
+    )
+
+    for target, findings in run_fleet(plugins, fleet).items():
+        for result in by_target.get(target, ()):
+            # Inserted at the front: a shared key changes how everything below
+            # it should be read.
+            for finding in reversed(findings):
+                result.findings.insert(0, finding)
