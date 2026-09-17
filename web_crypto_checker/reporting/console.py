@@ -10,6 +10,7 @@ from ..models import (
     QuicTransportParameters,
     RevocationStatus,
     ScanReport,
+    Severity,
     TlsCompressionStatus,
 )
 from .labels import (
@@ -20,6 +21,24 @@ from .labels import (
     trust_label,
     verdict_label,
 )
+from .options import RenderOptions
+
+#: ANSI colour per severity, and one for the grade. Applied only when the caller
+#: asks for colour (``--color``); the escape is closed by ``_ANSI_RESET``.
+_ANSI_RESET = "\x1b[0m"
+_ANSI_GRADE = "\x1b[1m"  # bold, neutral: the grade already carries its own letter
+_ANSI_SEVERITY: Dict[Severity, str] = {
+    Severity.CRITICAL: "\x1b[1;31m",  # bold red
+    Severity.HIGH: "\x1b[31m",  # red
+    Severity.MEDIUM: "\x1b[33m",  # yellow
+    Severity.LOW: "\x1b[36m",  # cyan
+    Severity.INFO: "\x1b[2m",  # dim
+}
+
+
+def _paint(text: str, code: str, options: RenderOptions) -> str:
+    """Wrap ``text`` in an ANSI colour when the caller asked for colour."""
+    return f"{code}{text}{_ANSI_RESET}" if options.color else text
 
 #: Value -> message key maps. A dict lookup (not a branch) keeps the renderer at
 #: 100% coverage without a test for every possible value: the literal is one
@@ -117,7 +136,8 @@ def _key_description(leaf: CertificateInfo, t: Translator) -> str:
     return leaf.key_type
 
 
-def render(report: ScanReport, t: Translator) -> str:
+def render(report: ScanReport, t: Translator, options: Optional[RenderOptions] = None) -> str:
+    options = options or RenderOptions()
     lines = [
         t(
             "rep.con.header",
@@ -127,6 +147,10 @@ def render(report: ScanReport, t: Translator) -> str:
             reachable=report.summary.succeeded,
         )
     ]
+    if options.summary_only:
+        # Only the header: the per-endpoint detail is dropped, and the text format
+        # follows this with its aggregate footer.
+        return "\n".join(lines)
     for result in report.results:
         lines.append("")
         address = f"  [{result.ip}]" if result.ip and result.ip != result.target.host else ""
@@ -134,8 +158,9 @@ def render(report: ScanReport, t: Translator) -> str:
         if not result.ok:
             lines.append(t("rep.con.error", error=result.error))
             continue
+        grade = _paint(result.grade or t("rep.con.na"), _ANSI_GRADE, options)
         lines.append(
-            f"  {t('rep.field.grade')}: {result.grade or t('rep.con.na')}"
+            f"  {t('rep.field.grade')}: {grade}"
             f"    {t('rep.field.verdict')}: {verdict_label(t, result.verdict)}"
         )
         strength = result.security_strength
@@ -156,6 +181,8 @@ def render(report: ScanReport, t: Translator) -> str:
             lines.append(t("rep.con.cipher_suites", n=len(cipher.algorithms)))
             for algorithm in cipher.algorithms:
                 lines.append(f"    [{category_label(t, algorithm.category)}] {algorithm.name}")
+                if options.notes and algorithm.notes:
+                    lines.append(f"        {algorithm.notes}")
         if result.groups:
             names = ", ".join(group.name for group in result.groups)
             lines.append(t("rep.con.key_exchange_groups", names=names))
@@ -336,20 +363,30 @@ def render(report: ScanReport, t: Translator) -> str:
             lines.append(t("rep.con.grpc", value=t("rep.con.supported")))
         for finding in result.findings:
             items = ", ".join(finding.items)
+            severity = _paint(
+                severity_label(t, finding.severity),
+                _ANSI_SEVERITY[finding.severity],
+                options,
+            )
             lines.append(
                 t(
                     "rep.con.finding",
-                    severity=severity_label(t, finding.severity),
+                    severity=severity,
                     title=finding.title,
                     items=items,
                 )
             )
         for vulnerability in result.vulnerabilities:
             evidence = f" ({', '.join(vulnerability.evidence)})" if vulnerability.evidence else ""
+            severity = _paint(
+                severity_label(t, vulnerability.severity),
+                _ANSI_SEVERITY[vulnerability.severity],
+                options,
+            )
             lines.append(
                 t(
                     "rep.con.vuln",
-                    severity=severity_label(t, vulnerability.severity),
+                    severity=severity,
                     id=vulnerability.id,
                     name=vulnerability.name,
                     evidence=evidence,

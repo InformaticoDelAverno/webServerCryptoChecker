@@ -6,15 +6,22 @@ whole-scan counts at the end so a reader sees the shape of a fleet at a glance.
 
 from __future__ import annotations
 
+from dataclasses import replace
+from typing import Optional
+
 from ..i18n import Translator
 from ..models import ScanReport
 from . import console
+from .options import RenderOptions
 
 
-def render(report: ScanReport, t: Translator) -> str:
+def render(report: ScanReport, t: Translator, options: Optional[RenderOptions] = None) -> str:
+    options = options or RenderOptions()
     summary = report.summary
     lines = [
-        console.render(report, t),
+        # A text report is meant for a ticket or an email, so it never carries
+        # escape sequences even when the caller asked for colour on the console.
+        console.render(report, t, replace(options, color=False)),
         "",
         t("rep.txt.summary"),
         t(

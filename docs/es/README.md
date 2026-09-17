@@ -32,6 +32,7 @@ conformidad con las normas publicadas.
 - [El asistente interactivo (--wizard)](#el-asistente-interactivo---wizard)
 - [Idiomas (--lang)](#idiomas---lang)
 - [Formatos de informe](#formatos-de-informe)
+- [Las tres interfaces](#las-tres-interfaces)
 - [La interfaz web](#la-interfaz-web)
 - [La interfaz MCP](#la-interfaz-mcp)
 - [Conformidad con estándares (NIST, FIPS, ENS, PCI DSS, CIS…)](#conformidad-con-estándares-nist-fips-ens-pci-dss-cis)
@@ -234,13 +235,26 @@ cada endpoint.
 
 ---
 
+## Las tres interfaces
+
+La misma auditoría se ofrece de tres formas, con idéntico resultado:
+
+- **CLI** — la línea de órdenes de este manual (`./web-crypto-checker`).
+- **MCP** — un servidor JSON-RPC 2.0 por *stdio* para agentes, con
+  `web-crypto-checker-mcp` (o `python -m web_crypto_checker.mcp`). Expone la
+  herramienta `scan` (que toma el mismo `argv` que la CLI) más `help`,
+  `list_profiles`, `list_plugins`, `list_vulnerabilities` y `show_policy`.
+- **Web** — una interfaz web de un solo escaneo con `python -m web_crypto_checker.web`
+  (endurecida: cabeceras de seguridad, cola de trabajos con techo, y un token
+  opcional). El `docker-compose.yml` la levanta en contenedor.
+
 ## La interfaz web
 
 Una forma **adicional** de usar la herramienta, no un sustituto: el mismo
 `scan()`, evaluando las mismas normativas, y el mismo `render()` —el informe se
 descarga en **cualquiera de los ocho formatos**, en el idioma elegido—, desde un
 formulario. Cero dependencias también aquí: el servidor es `http.server` de la
-librería estándar.
+biblioteca estándar.
 
 ```bash
 # En local (por defecto escucha solo en 127.0.0.1:8443)
@@ -393,6 +407,19 @@ claude mcp list                     # comprueba que aparece y conecta
 **Otros clientes** (Cursor, VS Code, Zed…). Todos consumen la misma forma
 `command`/`args`/`env`; cambia solo dónde vive el fichero (p. ej. `.cursor/mcp.json`
 en Cursor). Consulta la documentación del cliente para la ruta exacta.
+
+**Ollama.** Ollama ejecuta modelos en **local**, pero **no es en sí un host
+MCP**: no arranca servidores MCP por su cuenta. Para darle esta herramienta, usa
+un cliente o puente MCP que además hable con Ollama. El más directo es **mcphost**
+(un host MCP de código abierto que funciona con modelos de Ollama): apunta su
+configuración al comando del servidor,
+
+```json
+{ "mcpServers": { "web-crypto-checker": { "command": "web-crypto-checker-mcp" } } }
+```
+
+y lánzalo con `mcphost -m ollama:llama3.1 --config ese-fichero.json`. Otros
+clientes que combinan Ollama con MCP son oterm, LibreChat y Open WebUI.
 
 **Sin instalar (usando el repositorio).** Si prefieres no instalar el paquete,
 apunta el cliente a `python3 -m` y dile en qué directorio ejecutarlo:
@@ -548,7 +575,7 @@ Cómo escribir uno, con el contrato completo, en
 
 ## Qué comprueba exactamente
 
-**Sobre el cable, sin autenticarse:**
+**En la conexión, sin autenticarse:**
 
 - **Versiones**: SSL 2.0 (con su propio formato de mensaje), SSL 3.0 y TLS
   1.0–1.3, cada una marcada como ofrecida o no.
@@ -600,7 +627,7 @@ servidor, parámetros Diffie-Hellman (Logjam), tolerancia a GREASE, compresión 
 | Código | Significado |
 |---|---|
 | `0` | Todos los objetivos se escanearon correctamente |
-| `1` | Algún objetivo no se pudo escanear (inalcanzable o error), o hubo una **regresión** con `--compare --fail-on-regression` |
+| `1` | Algún objetivo no se pudo escanear (inalcanzable o error); una **regresión** con `--compare --fail-on-regression`; un hallazgo que alcanza el umbral de `--fail-on`; o un extremo que no cumple un perfil exigido con `--require-profile` |
 | `2` | Error de uso o de configuración (formato, perfil u objetivo inválido; `--wizard` sin terminal) |
 
 ```yaml
@@ -639,6 +666,9 @@ Objetivos
 Escaneo
   -t, --timeout SEGUNDOS    tiempo máximo por conexión (por defecto 6)
   -c, --concurrency N       objetivos en paralelo (por defecto 1)
+  -r, --retries N           reintentos por objetivo cuando falla un escaneo (por defecto 1)
+  -4, --ipv4                resolver los nombres de objetivo solo a direcciones IPv4
+  -6, --ipv6                resolver los nombres de objetivo solo a direcciones IPv6
   --active                  sondas activas (tráfico ofensivo; solo con autorización)
 
 Confianza (certificados)
@@ -648,17 +678,33 @@ Confianza (certificados)
 Conformidad y plugins
   --profile ID              evaluar cada endpoint contra un perfil (repetible)
   --list-profiles           listar los perfiles de conformidad y salir
+  --list-vulnerabilities    listar las vulnerabilidades conocidas que comprueba la política, y salir
+  --show-policy             mostrar la política de puntuación activa (categorías, pesos, escala) y salir
   --plugin-dir DIR          cargar plugins de detección de un directorio (repetible)
   --list-plugins            listar los plugins que se cargarían y salir
 
 Salida
   --format NAMES            console, text, json, csv, html, sarif, inventory, openmetrics
   -o, --output PATH         escribir el informe a un fichero (nombre base con varios formatos)
+  -q, --quiet               silenciar el progreso por objetivo en la salida de error estándar
+  -v, --verbose             informar de cada extremo y su nota al terminar el escaneo
+  --color {auto,always,never}  colorear la salida de la terminal (por defecto auto)
+  --no-color                atajo de --color never
+  -s, --summary-only        imprimir solo el resumen, sin el detalle por objetivo
+  --notes                   incluir las notas por algoritmo de la política en consola y texto
+
+Puertas de CI
+  --fail-on SEVERIDAD       salir con código 1 ante un hallazgo de esa severidad o peor
+  --require-profile ID      salir con código 1 salvo que todos los extremos cumplan el perfil (repetible)
 
 Comparación e histórico
   --compare BASELINE        comparar con un informe JSON anterior y mostrar lo que cambió
   --fail-on-regression      salir con código 1 si algún endpoint empeoró (con --compare)
   --history PATH            añadir este escaneo a un histórico y mostrar la evolución de notas
+  --history-report          con --history, mostrar cómo se movió el parque entre escaneos
+
+Política
+  --export-policy FICHERO   escribir una copia de la política de puntuación en FICHERO y salir
 
 Información
   --version                 mostrar la versión y salir
@@ -735,6 +781,10 @@ awk '$1=="server_name"{print $2}' /etc/nginx/sites-enabled/*.conf | ./web-crypto
 ./web-crypto-checker example.com --profile mozilla-modern --profile pci-dss-4
 ./web-crypto-checker --list-profiles                  # --list-profiles
 
+# Inspeccionar la política antes de escanear           # --list-vulnerabilities, --show-policy
+./web-crypto-checker --list-vulnerabilities
+./web-crypto-checker --show-policy
+
 # Cargar plugins de detección propios                 # --plugin-dir
 ./web-crypto-checker example.com --plugin-dir ./mis-plugins
 ./web-crypto-checker --list-plugins                   # --list-plugins
@@ -752,6 +802,59 @@ awk '$1=="server_name"{print $2}' /etc/nginx/sites-enabled/*.conf | ./web-crypto
 
 # Serie histórica de notas por endpoint                # --history
 ./web-crypto-checker -f inventario.txt --history historial.json
+
+# Cómo se movió el parque entre escaneos registrados   # --history-report
+./web-crypto-checker -f inventario.txt --history historial.json --history-report
+```
+
+### Puertas de CI: severidad y conformidad
+
+```bash
+# Fallar (código 1) ante un hallazgo de esta severidad o peor   # --fail-on
+./web-crypto-checker example.com --fail-on high
+
+# Exigir que todos los extremos cumplan un perfil               # --require-profile
+./web-crypto-checker example.com --require-profile mozilla-modern
+```
+
+### Resolución y reintentos
+
+```bash
+# Reintentar cada objetivo que falle                    # --retries
+./web-crypto-checker example.com --retries 2
+./web-crypto-checker example.com -r 2
+
+# Resolver solo a una familia de direcciones            # --ipv4 / --ipv6
+./web-crypto-checker example.com --ipv4
+./web-crypto-checker example.com -4
+./web-crypto-checker example.com --ipv6
+./web-crypto-checker example.com -6
+```
+
+### Controlar la salida
+
+```bash
+# Silenciar o ampliar el progreso                       # --quiet / --verbose
+./web-crypto-checker -f inventario.txt --quiet
+./web-crypto-checker -f inventario.txt -q
+./web-crypto-checker -f inventario.txt --verbose
+./web-crypto-checker -f inventario.txt -v
+
+# Color del terminal, explícito                          # --color / --no-color
+./web-crypto-checker example.com --color always
+./web-crypto-checker example.com --no-color
+
+# Solo el resumen, o con las notas por algoritmo         # --summary-only / --notes
+./web-crypto-checker -f inventario.txt --summary-only
+./web-crypto-checker -f inventario.txt -s
+./web-crypto-checker example.com --notes
+```
+
+### Política
+
+```bash
+# Exportar la política a un fichero para editarla        # --export-policy
+./web-crypto-checker --export-policy politica.json
 ```
 
 ### Información
@@ -775,7 +878,7 @@ señal de seguridad sin validar*: cuando una comprobación no se puede validar o
 cambiaría ningún veredicto, se documenta en vez de fingirla.
 
 - **Oráculo activo del *special DROWN*** (CVE-2016-0703): no hay servidor
-  vulnerable reproducible con el que validarlo, y soportar SSL 2.0 ya es
+  vulnerable reproducible con el que validarlo, y admitir SSL 2.0 ya es
   catastrófico de por sí (se detecta y puntúa **F**).
 - **CONTINUATION flood** (CVE-2024-27316) y **Rapid Reset** (CVE-2023-44487) de
   HTTP/2: la única detección fiable es provocar el propio ataque de denegación de

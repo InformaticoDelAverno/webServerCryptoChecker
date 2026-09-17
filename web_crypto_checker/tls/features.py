@@ -23,7 +23,7 @@ from .constants import (
     TLS_FALLBACK_SCSV,
 )
 from .messages import build_client_hello
-from .probe import DEFAULT_TIMEOUT, send_client_hello
+from .probe import DEFAULT_TIMEOUT, Connect, send_client_hello
 from .tls13 import retrieve_tls13_certificate
 
 _TLS12 = PROTOCOL_VERSIONS[1]
@@ -38,12 +38,14 @@ _DEFLATE_THEN_NULL = b"\x01\x00"
 
 
 def detect_secure_renegotiation(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether a TLS 1.2 server supports secure renegotiation (RFC 5746).
 
     ``None`` when the server does not answer with a 1.2 ServerHello, since
     renegotiation is a 1.2-and-below concern that does not apply otherwise.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12,
@@ -52,7 +54,7 @@ def detect_secure_renegotiation(
         groups=_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     server_hello = result.server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None
@@ -60,7 +62,8 @@ def detect_secure_renegotiation(
 
 
 def detect_extended_master_secret(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether a TLS 1.2 server supports the extended master secret (RFC 7627).
 
@@ -68,6 +71,7 @@ def detect_extended_master_secret(
     Handshake attack. The probe offers the extension (safe here because it never
     completes the handshake) and checks the echo. ``None`` when the server does
     not answer with a 1.2 ServerHello, as 1.3 has the guarantee built in.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12,
@@ -77,7 +81,7 @@ def detect_extended_master_secret(
         signature_schemes=_SIGNATURE_SCHEMES,
         offer_extended_master_secret=True,
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     server_hello = result.server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None
@@ -85,21 +89,22 @@ def detect_extended_master_secret(
 
 
 def detect_encrypt_then_mac(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether a TLS 1.2 server hardens its CBC cipher suites with Encrypt-then-MAC (RFC
     7366) instead of the MAC-then-encrypt that Lucky13 and other padding-oracle attacks
     target. Only CBC suites are offered, with the extension; a ServerHello therefore means a
     CBC suite was chosen. ``True`` it also echoed EtM (hardened), ``False`` it did not (the
     weak construction), ``None`` no CBC suite was negotiated (AEAD-only or not 1.2, so EtM
-    does not apply -- nothing to report)."""
+    does not apply -- nothing to report). ``connect`` opens the connection (STARTTLS too)."""
     cbc = [code for code, name in LEGACY_CIPHER_SUITES.items() if "CBC" in name]
     hello = build_client_hello(
         _TLS12, cbc, server_name=sni, groups=_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
         extra_extensions=[(EXT_ENCRYPT_THEN_MAC, b"")],
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     server_hello = result.server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None
@@ -107,7 +112,8 @@ def detect_encrypt_then_mac(
 
 
 def detect_ocsp_stapling(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[bytes]]:
     """Whether a TLS 1.3 server staples an OCSP response, and the response itself.
 
@@ -115,21 +121,24 @@ def detect_ocsp_stapling(
     CertificateEntry is the only way to see it, since 1.3 encrypts the flight. Returns
     ``(stapled, response)``: ``(None, None)`` when the handshake does not complete (e.g.
     the server is not 1.3), otherwise whether a response was stapled and its DER.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
-    _ders, stapled, error = retrieve_tls13_certificate(host, port, sni, timeout)
+    _ders, stapled, error = retrieve_tls13_certificate(host, port, sni, timeout, connect=connect)
     if error is not None:
         return None, None
     return stapled is not None, stapled
 
 
 def detect_session_resumption(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[bool]]:
     """``(session-id resumption, session-ticket resumption)`` from a 1.2 ServerHello.
 
     A non-empty session_id echo offers stateful id resumption; an echoed
     session_ticket extension (RFC 5077) offers stateless ticket resumption. Both
     ``None`` when the server does not answer with a 1.2 ServerHello.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12,
@@ -139,7 +148,7 @@ def detect_session_resumption(
         signature_schemes=_SIGNATURE_SCHEMES,
         offer_session_ticket=True,
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     server_hello = result.server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None, None
@@ -154,13 +163,15 @@ def detect_fallback_scsv(
     supported_ids: List[str],
     sni: str = "",
     timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether the server honours TLS_FALLBACK_SCSV (RFC 7507) downgrade protection.
 
     Offers the highest TLS version below the server's maximum, marked with the
     fallback SCSV; a server that knows it could do better must answer
     ``inappropriate_fallback``. ``None`` when there is no lower version to fall
-    back from, or the answer is inconclusive.
+    back from, or the answer is inconclusive. ``connect`` opens the connection
+    (direct, or a STARTTLS upgrade).
     """
     supported = [_BY_ID[version_id] for version_id in supported_ids if version_id in _BY_ID]
     if not supported:
@@ -177,7 +188,7 @@ def detect_fallback_scsv(
         groups=_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     if result.alert is not None and result.alert[1] == ALERT_INAPPROPRIATE_FALLBACK:
         return True
     if result.server_hello is not None:
@@ -196,11 +207,13 @@ def detect_downgrade_protection(
     supported_ids: List[str],
     sni: str = "",
     timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether a TLS 1.3-capable server sets the RFC 8446 4.1.3 downgrade sentinel when it
     negotiates TLS 1.2. ``None`` when the check does not apply (the server is not both 1.3-
     and 1.2-capable) or the answer is inconclusive; ``False`` is a real gap -- a downgrade
-    to 1.2 would then be invisible to a 1.3-capable client."""
+    to 1.2 would then be invisible to a 1.3-capable client. ``connect`` opens the connection
+    (direct, or a STARTTLS upgrade)."""
     if not {"tls1_2", "tls1_3"} <= set(supported_ids):
         return None
     hello = build_client_hello(
@@ -210,7 +223,7 @@ def detect_downgrade_protection(
         groups=_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
     )
-    server_hello = send_client_hello(host, port, hello, timeout).server_hello
+    server_hello = send_client_hello(host, port, hello, timeout, connect=connect).server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None
     return server_hello.random[24:32] == _DOWNGRADE_SENTINEL_TLS12
@@ -222,7 +235,8 @@ _PREFERENCE_GROUPS = [*_GROUPS, 0x0100, 0x0101]
 
 
 def _negotiated_cipher(
-    host: str, port: int, cipher_ids: List[int], sni: str, timeout: float
+    host: str, port: int, cipher_ids: List[int], sni: str, timeout: float,
+    connect: Optional[Connect] = None,
 ) -> Optional[int]:
     """The cipher a TLS 1.2 server picks from ``cipher_ids``, or ``None`` if it does not
     answer with a 1.2 ServerHello."""
@@ -230,14 +244,15 @@ def _negotiated_cipher(
         _TLS12, cipher_ids, server_name=sni, groups=_PREFERENCE_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
     )
-    server_hello = send_client_hello(host, port, hello, timeout).server_hello
+    server_hello = send_client_hello(host, port, hello, timeout, connect=connect).server_hello
     if server_hello is None or server_hello.negotiated_version != _TLS12_VERSION:
         return None
     return server_hello.cipher_suite
 
 
 def detect_cipher_preference(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether a TLS 1.2 server imposes its own cipher order rather than the client's.
 
@@ -247,15 +262,16 @@ def detect_cipher_preference(
     (the safe posture); ``False`` means the client does, so an attacker steering a
     client can pull the connection to the weakest suite both sides share. ``None`` when
     it cannot be told -- not a 1.2 server, or fewer than two mutually-supported suites.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
-    top = _negotiated_cipher(host, port, list(LEGACY_CIPHER_SUITES), sni, timeout)
+    top = _negotiated_cipher(host, port, list(LEGACY_CIPHER_SUITES), sni, timeout, connect)
     if top is None:
         return None
     without_top = [cipher for cipher in LEGACY_CIPHER_SUITES if cipher != top]
-    second = _negotiated_cipher(host, port, without_top, sni, timeout)
+    second = _negotiated_cipher(host, port, without_top, sni, timeout, connect)
     if second is None:
         return None  # only one mutually-supported suite: there is no order to impose
-    chosen = _negotiated_cipher(host, port, [second, top], sni, timeout)
+    chosen = _negotiated_cipher(host, port, [second, top], sni, timeout, connect)
     if chosen is None:
         return None  # inconclusive rather than a guess
     return chosen == top
@@ -266,7 +282,10 @@ def detect_cipher_preference(
 _GREASE = 0x0A0A
 
 
-def _greased_handshake(host: str, port: int, sni: str, timeout: float, grease: bool) -> bool:
+def _greased_handshake(
+    host: str, port: int, sni: str, timeout: float, grease: bool,
+    connect: Optional[Connect] = None,
+) -> bool:
     """Whether a TLS 1.2 ClientHello -- optionally salted with GREASE values -- draws a
     ServerHello."""
     ciphers = list(LEGACY_CIPHER_SUITES)
@@ -280,33 +299,36 @@ def _greased_handshake(host: str, port: int, sni: str, timeout: float, grease: b
         _TLS12, ciphers, server_name=sni, groups=groups,
         signature_schemes=_SIGNATURE_SCHEMES, extra_extensions=extra,
     )
-    return send_client_hello(host, port, hello, timeout).server_hello is not None
+    return send_client_hello(host, port, hello, timeout, connect=connect).server_hello is not None
 
 
 def detect_grease_tolerance(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[bool]:
     """Whether the server tolerates GREASE (RFC 8701): unknown cipher, group and extension
     values a conformant server must ignore. ``True`` when a greased hello still handshakes;
     ``False`` when a plain hello handshakes but a greased one does not (the server is
     intolerant and may break as TLS grows); ``None`` when neither handshakes (not reachable
-    over 1.2)."""
-    if _greased_handshake(host, port, sni, timeout, grease=True):
+    over 1.2). ``connect`` opens the connection (direct, or a STARTTLS upgrade)."""
+    if _greased_handshake(host, port, sni, timeout, grease=True, connect=connect):
         return True
-    if _greased_handshake(host, port, sni, timeout, grease=False):
+    if _greased_handshake(host, port, sni, timeout, grease=False, connect=connect):
         return False
     return None
 
 
 def detect_tls_compression(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> TlsCompressionStatus:
     """Whether the server agrees to TLS-level compression (the CRIME channel).
 
     Offers DEFLATE ahead of null in a TLS 1.2 ClientHello; a server that echoes a
     non-null compression method has compression on. ``UNKNOWN`` when no
     ServerHello comes back (a 1.3-only server rejects a 1.2, compression-offering
-    hello, and 1.3 has no compression to worry about anyway).
+    hello, and 1.3 has no compression to worry about anyway). ``connect`` opens the
+    connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12,
@@ -316,7 +338,7 @@ def detect_tls_compression(
         signature_schemes=_SIGNATURE_SCHEMES,
         compression_methods=_DEFLATE_THEN_NULL,
     )
-    result = send_client_hello(host, port, hello, timeout)
+    result = send_client_hello(host, port, hello, timeout, connect=connect)
     server_hello = result.server_hello
     if server_hello is None:
         return TlsCompressionStatus.UNKNOWN

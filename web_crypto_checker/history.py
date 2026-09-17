@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .models import ScanReport
 
@@ -47,4 +47,48 @@ def trend(report: ScanReport, path: Path) -> List[str]:
             if (record["target"], record["ip"]) == key
         ]
         lines.append(f"{result.target.display_name} [{result.ip or '-'}]: {' -> '.join(grades)}")
+    return lines
+
+
+def summarise(report: ScanReport, path: Path) -> List[str]:
+    """How the estate moved across the recorded scans (for ``--history-report``).
+
+    Where ``trend`` prints the raw grade series, this reads the *movement*: for
+    each current endpoint, its first recorded grade against its last and whether
+    its score rose or fell, plus a one-line estate roll-up. Direction is taken
+    from the numeric score, so ``A`` to ``A`` with a lower score still reads as a
+    regression the letter alone would hide.
+    """
+    records = _load(path)
+    series: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+    for record in records:
+        series.setdefault((record["target"], record["ip"]), []).append(record)
+
+    lines: List[str] = []
+    improved = regressed = steady = 0
+    for result in report.results:
+        entries = series.get((str(result.target), result.ip or ""))
+        if not entries:
+            continue
+        first, last = entries[0], entries[-1]
+        first_score, last_score = first.get("score"), last.get("score")
+        if first_score is not None and last_score is not None:
+            delta = last_score - first_score
+        else:
+            delta = 0
+        if delta > 0:
+            improved += 1
+            move = f"improved +{delta}"
+        elif delta < 0:
+            regressed += 1
+            move = f"regressed {delta}"
+        else:
+            steady += 1
+            move = "no change"
+        lines.append(
+            f"{result.target.display_name} [{result.ip or '-'}]: "
+            f"{first['grade'] or '?'} -> {last['grade'] or '?'} "
+            f"({move}, {len(entries)} scan(s))"
+        )
+    lines.append(f"Estate: {improved} improved, {regressed} regressed, {steady} unchanged")
     return lines

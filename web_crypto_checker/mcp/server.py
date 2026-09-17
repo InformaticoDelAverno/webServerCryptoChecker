@@ -202,6 +202,18 @@ def _build_tools() -> List[_Tool]:
             input_schema=_LANG_SCHEMA,
             build_argv=_flag_argv("--list-plugins"),
         ),
+        _Tool(
+            name="list_vulnerabilities",
+            description="List the known vulnerabilities the policy checks for.",
+            input_schema=_LANG_SCHEMA,
+            build_argv=_flag_argv("--list-vulnerabilities"),
+        ),
+        _Tool(
+            name="show_policy",
+            description="Show the active scoring policy: categories, weights and grade scale.",
+            input_schema=_LANG_SCHEMA,
+            build_argv=_flag_argv("--show-policy"),
+        ),
     ]
 
 

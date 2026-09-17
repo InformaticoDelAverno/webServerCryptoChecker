@@ -197,6 +197,29 @@ class Policy:
     def metadata(self) -> Dict[str, Any]:
         return dict(self._metadata)
 
+    def describe(self) -> List[str]:
+        """A human-readable summary of the loaded scoring policy (for ``--show-policy``).
+
+        Lists the category scores, the class weights, the grade scale and the caps so an
+        operator can see the criteria the grade rests on -- or confirm a ``--config``
+        override -- without reading the JSON."""
+        name = f"{self._metadata.get('name', 'algorithms')} {self._metadata.get('version', '')}"
+        scores = ", ".join(
+            f"{category}={'-' if score is None else score}"
+            for category, score in self._category_scores.items()
+        )
+        weights = ", ".join(f"{key}={weight}" for key, weight in self._class_weights.items())
+        scale = " ".join(f"{grade['grade']}>={grade['min']}" for grade in self._grades)
+        caps = ", ".join(f"{key}->{grade}" for key, grade in self._grade_caps.items())
+        return [
+            f"Policy: {name.strip()}",
+            f"Categories: {scores}",
+            f"Class weights: {weights}",
+            f"Grade scale: {scale}",
+            f"Grade caps: {caps or '(none)'}",
+            f"Vulnerabilities tracked: {len(self._vulnerabilities)}",
+        ]
+
 
 # --------------------------------------------------------------------------- #
 # Language overlay (data-level i18n)

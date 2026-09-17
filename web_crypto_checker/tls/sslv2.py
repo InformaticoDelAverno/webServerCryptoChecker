@@ -17,9 +17,9 @@ from __future__ import annotations
 import os
 import socket
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
-from .probe import DEFAULT_TIMEOUT
+from .probe import DEFAULT_TIMEOUT, Connect
 
 _SSL2_CLIENT_HELLO = 0x01
 _SSL2_SERVER_HELLO = 0x04
@@ -89,12 +89,16 @@ def _server_ciphers(record: bytes) -> List[int]:
     return [int.from_bytes(specs[i : i + 3], "big") for i in range(0, len(specs) - 2, 3)]
 
 
-def probe_sslv2(host: str, port: int, timeout: float = DEFAULT_TIMEOUT) -> Sslv2Result:
+def probe_sslv2(
+    host: str, port: int, timeout: float = DEFAULT_TIMEOUT, connect: Optional[Connect] = None
+) -> Sslv2Result:
     """Whether ``host:port`` speaks SSL 2.0, and whether it offers export ciphers. The
     server answering with an SSLv2 SERVER-HELLO means it is supported (and DROWN-exposed);
-    an export cipher in that SERVER-HELLO makes the attack practical."""
+    an export cipher in that SERVER-HELLO makes the attack practical. ``connect`` opens the
+    connection (direct, or a STARTTLS upgrade)."""
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return Sslv2Result(error=f"connection failed: {exc}")
     try:

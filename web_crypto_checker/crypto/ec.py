@@ -8,6 +8,7 @@ constant-time: a scanner verifies public signatures and guards no secret.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
@@ -92,3 +93,44 @@ CURVES_BY_OID: Dict[str, Curve] = {
     "1.2.840.10045.3.1.7": P256,  # prime256v1 / secp256r1
     "1.3.132.0.34": P384,  # secp384r1
 }
+
+
+# --- Ephemeral ECDHE, for the TLS 1.3 probe's key_share ----------------------- #
+# These generate a throwaway key for one probe handshake. Like the rest of this module they are
+# not constant-time -- the scanner's ephemeral private protects nothing -- which is fine here.
+
+
+def byte_length(curve: Curve) -> int:
+    """The fixed width, in bytes, of a coordinate on ``curve`` (32 for P-256, 48 for P-384)."""
+    return (curve.p.bit_length() + 7) // 8
+
+
+def generate_keypair(curve: Curve) -> Tuple[int, Tuple[int, int]]:
+    """An ephemeral private scalar in ``[1, n)`` and its public point ``d*G``."""
+    scalar = int.from_bytes(os.urandom(byte_length(curve) + 8), "big") % (curve.n - 1) + 1
+    point = scalar_mul(curve, scalar, curve.g)
+    assert point is not None  # d in [1, n) times the generator is never the point at infinity
+    return scalar, point
+
+
+def encode_public(curve: Curve, point: Tuple[int, int]) -> bytes:
+    """The uncompressed SEC1 encoding ``0x04 || X || Y`` -- the TLS key_share form (RFC 8446)."""
+    size = byte_length(curve)
+    return b"\x04" + point[0].to_bytes(size, "big") + point[1].to_bytes(size, "big")
+
+
+def ecdh_shared(curve: Curve, scalar: int, peer_public: bytes) -> Optional[bytes]:
+    """The ECDHE shared secret -- the X coordinate of ``scalar * peer`` (RFC 8446 7.4.2) -- from
+    our ``scalar`` and the peer's uncompressed point, or ``None`` if that point is malformed or
+    off the curve (an invalid-curve-attack defence, though a scanner guards no secret)."""
+    size = byte_length(curve)
+    if len(peer_public) != 1 + 2 * size or peer_public[0] != 0x04:
+        return None
+    peer = (int.from_bytes(peer_public[1:1 + size], "big"),
+            int.from_bytes(peer_public[1 + size:], "big"))
+    if not on_curve(curve, peer):
+        return None
+    shared = scalar_mul(curve, scalar, peer)
+    if shared is None:
+        return None  # the peer sent a low-order point; no usable secret
+    return shared[0].to_bytes(size, "big")

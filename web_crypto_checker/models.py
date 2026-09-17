@@ -314,6 +314,11 @@ class CertificateInfo:
     issuer: str = ""
     serial: str = ""
     sans: List[str] = field(default_factory=list)
+    has_san: bool = False
+    """Whether a subjectAltName extension is present at all -- even one that carries no
+    ``dNSName``. RFC 6125 6.4.4: once a SAN is present the subject CN must be ignored for
+    hostname matching, so this distinguishes "no SAN" (CN fallback allowed) from "a SAN with
+    no dNSName" (no match)."""
     key_type: str = ""
     """``RSA``, ``EC`` or ``Ed25519``."""
     key_bits: Optional[int] = None

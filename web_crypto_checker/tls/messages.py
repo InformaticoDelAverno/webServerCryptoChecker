@@ -78,6 +78,7 @@ def _write_extensions(
     groups: List[int],
     signature_schemes: List[int],
     key_share: Optional[Tuple[int, bytes]],
+    key_shares: Optional[List[Tuple[int, bytes]]],
     alpn: Optional[List[str]],
     empty_key_share: bool,
     heartbeat: bool,
@@ -121,11 +122,13 @@ def _write_extensions(
         supported = Writer()
         supported.vector(1, (0x0304).to_bytes(2, "big"))
         entries.append((EXT_SUPPORTED_VERSIONS, supported.getvalue()))
-        if key_share is not None:
-            group_code, public = key_share
+        offered = key_shares if key_shares is not None else (
+            [key_share] if key_share is not None else None)
+        if offered is not None:
             entry = Writer()
-            entry.u16(group_code)
-            entry.vector(2, public)
+            for group_code, public in offered:  # a CH may carry a key_share per offered group
+                entry.u16(group_code)
+                entry.vector(2, public)
             shares = Writer()
             shares.vector(2, entry.getvalue())
             entries.append((EXT_KEY_SHARE, shares.getvalue()))
@@ -193,6 +196,7 @@ def build_client_hello(
     groups: Optional[List[int]] = None,
     signature_schemes: Optional[List[int]] = None,
     key_share: Optional[Tuple[int, bytes]] = None,
+    key_shares: Optional[List[Tuple[int, bytes]]] = None,
     alpn: Optional[List[str]] = None,
     empty_key_share: bool = False,
     heartbeat: bool = False,
@@ -228,6 +232,7 @@ def build_client_hello(
         groups or [],
         signature_schemes or [],
         key_share,
+        key_shares,
         alpn,
         empty_key_share,
         heartbeat,

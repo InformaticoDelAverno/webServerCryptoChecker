@@ -30,7 +30,7 @@ from .constants import (
     alert_description,
 )
 from .messages import build_client_hello, parse_server_hello
-from .probe import DEFAULT_TIMEOUT, _recv_exact
+from .probe import DEFAULT_TIMEOUT, Connect, _recv_exact
 from .wire import Reader, TlsError
 
 _TLS12 = PROTOCOL_VERSIONS[1]
@@ -247,7 +247,8 @@ def _classify_client_auth(
 
 
 def probe_client_certificate(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[bool], Optional[str]]:
     """Whether a TLS 1.2 server requests a client certificate, and whether it requires one.
 
@@ -255,13 +256,15 @@ def probe_client_certificate(
     in the server's first flight, so ``requested`` is read from that flight. To learn
     ``required``, the handshake is completed with an empty certificate: a server that
     enforces client auth refuses it (True), one that merely asks completes it (False).
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12, _CIPHERS, server_name=sni, groups=[_P256_GROUP],
         signature_schemes=_SIGNATURE_SCHEMES,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return None, None, f"connection failed: {exc}"
     try:
@@ -294,20 +297,23 @@ def _flight_certificate_status(buffer: bytes) -> Optional[bytes]:
 
 
 def probe_ocsp_stapling(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[bytes]]:
     """Whether a TLS 1.2 server staples an OCSP response, and the response itself.
 
     Offering a status_request makes a stapling server send a CertificateStatus message in
     its cleartext flight (RFC 6066 8), so reading that flight reveals it without finishing
     the handshake. Returns ``(stapled, response)``: ``(None, None)`` on error, otherwise
-    ``stapled`` is whether a response was stapled and ``response`` its DER (for verifying)."""
+    ``stapled`` is whether a response was stapled and ``response`` its DER (for verifying).
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade)."""
     hello = build_client_hello(
         _TLS12, _CIPHERS, server_name=sni, groups=[_P256_GROUP],
         signature_schemes=_SIGNATURE_SCHEMES, offer_status_request=True,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError:
         return None, None
     try:
@@ -399,19 +405,22 @@ def exchange_over_tls12(
     timeout: float,
     alpn: List[str],
     is_complete: Callable[[bytes], bool],
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[str], bytes, Optional[str]]:
     """Handshake offering ``alpn``, send ``request``, read until ``is_complete``.
 
     The TLS 1.2 counterpart of :func:`tls13.exchange_over_tls13`: returns
     ``(negotiated_alpn, response, error)`` so a caller can run a protocol chosen by
-    ALPN (HTTP/2, a WebSocket upgrade, gRPC) over a 1.2-only server.
+    ALPN (HTTP/2, a WebSocket upgrade, gRPC) over a 1.2-only server. ``connect`` opens
+    the connection (direct, or a STARTTLS upgrade), so the exchange reaches a mail service.
     """
     hello = build_client_hello(
         _TLS12, _CIPHERS, server_name=sni, groups=[_P256_GROUP],
         signature_schemes=_SIGNATURE_SCHEMES, alpn=alpn,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return None, b"", f"connection failed: {exc}"
     try:
@@ -546,7 +555,8 @@ def _classify_renegotiation(
 
 
 def probe_client_renegotiation(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> RenegotiationResult:
     """Whether the server permits a client-initiated renegotiation on an open connection.
 
@@ -554,14 +564,16 @@ def probe_client_renegotiation(
     handshake record. A server that answers with a ServerHello renegotiates on demand: a
     denial-of-service surface (CVE-2011-1473), and -- if the first handshake did not
     negotiate RFC 5746 secure renegotiation -- the plaintext-injection hole of
-    CVE-2009-3555. A server that refuses answers with an alert or closes.
+    CVE-2009-3555. A server that refuses answers with an alert or closes. ``connect`` opens
+    the connection (direct, or a STARTTLS upgrade).
     """
     hello = build_client_hello(
         _TLS12, _CIPHERS, server_name=sni, groups=[_P256_GROUP],
         signature_schemes=_SIGNATURE_SCHEMES,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return RenegotiationResult(tested=False, detail=f"connection failed: {exc}")
     try:
@@ -628,20 +640,23 @@ def _dhe_prime_bits_from_flight(flight: bytes) -> Optional[int]:
 
 
 def probe_dh_parameters(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Optional[int]:
     """The bit length of the finite-field DH prime a TLS 1.2 server uses for DHE.
 
     Offers DHE_RSA suites (including the export one) and reads the prime the server sends
     in its ServerKeyExchange -- so a weak or Logjam-class prime (CVE-2015-4000) is caught
     without completing the exchange. ``None`` when the server negotiates no DHE suite, so
-    there is no finite-field prime to weigh (an ECDHE-only server is not at issue)."""
+    there is no finite-field prime to weigh (an ECDHE-only server is not at issue).
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade)."""
     hello = build_client_hello(
         _TLS12, _DHE_CIPHERS, server_name=sni, groups=_FFDHE_GROUPS,
         signature_schemes=_SIGNATURE_SCHEMES,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError:
         return None
     try:

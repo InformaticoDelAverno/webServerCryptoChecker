@@ -322,7 +322,7 @@ mypy web_crypto_checker
 
 Líneas de 100 columnas, anotaciones de tipo en todas las funciones públicas,
 `from __future__ import annotations` en todos los módulos (compatibilidad con Python
-3.9, el intérprete más viejo que se declara soportar y que `tests/test_portability.py`
+3.9, el intérprete más viejo que se declara admitir y que `tests/test_portability.py`
 comprueba de verdad).
 
 ## La integración continua
@@ -333,7 +333,7 @@ ocho trabajos:
 | Trabajo | Qué hace |
 |---|---|
 | `tests` | La suite completa con cobertura, `fail_under = 100` |
-| `tests:python3.9` | La misma suite en el intérprete más viejo soportado |
+| `tests:python3.9` | La misma suite en el intérprete más viejo admitido |
 | `coverage:gates` | Los trinquetes: `.coveragerc` sin exclusiones, el suelo e2e y la base de mutación, y el propio cierre. Cuesta segundos, corre **en cada push** |
 | `coverage:mutation` | El testing de mutación del paquete entero contra su base |
 | `coverage:lab` | Levanta el laboratorio y hace **las dos** mediciones (la combinada al 100 % y el suelo e2e); son muchos contenedores, así que corre a mano o por planificación. Comparte guión con `make ci-lab` vía `lab/ci-lab.sh` |

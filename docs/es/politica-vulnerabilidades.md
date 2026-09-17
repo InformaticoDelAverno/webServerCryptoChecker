@@ -49,13 +49,13 @@ cargar** la política: un nodo con cero o dos claves, o una combinación mal
 escrita, da un error con el id de la vulnerabilidad en vez de una regla que no
 casa nunca y nadie nota.
 
-### `protocol` — una versión está soportada
+### `protocol` — una versión está admitida
 
 ```json
 "detection": { "protocol": "ssl2" }
 ```
 
-Casa si el servidor **soporta** esa versión. El identificador es el mismo que en
+Casa si el servidor **admite** esa versión. El identificador es el mismo que en
 la clase `protocols` (`ssl2`, `ssl3`, `tls1_0`, `tls1_1`, `tls1_2`, `tls1_3`).
 Así se detectan DROWN (`ssl2`) y POODLE (`ssl3`): la presencia de una versión
 rota es la vulnerabilidad, y ninguna configuración de suites la arregla.
@@ -100,7 +100,7 @@ Las diez entradas se detectan de una sola forma: **mirando lo que el servidor
 ofrece de verdad**. No hay detección por versión del producto ni deducción a
 partir de un *banner*, así que no hay margen de error ni advertencia de
 retroportado que dar. [`evaluate`](../../web_crypto_checker/vulnerabilities.py)
-construye el conjunto de protocolos soportados y las etiquetas de cada suite
+construye el conjunto de protocolos admitidos y las etiquetas de cada suite
 ofrecida, y evalúa cada árbol contra ellos.
 
 | id | Detección |
@@ -166,7 +166,7 @@ Ver [`politica-algoritmos.md`](politica-algoritmos.md).
 1. **Busca la referencia primero.** El CVE, el aviso, el commit. Si no la
    encuentras, no la escribas.
 2. **Decide qué la detecta de verdad, y que sea observable en el cable.** ¿Es una
-   versión soportada? ¿Es una etiqueta de una suite ofrecida? ¿Las dos? Escribe
+   versión admitida? ¿Es una etiqueta de una suite ofrecida? ¿Las dos? Escribe
    la condición más estrecha que sea correcta.
 3. **Prefiere `cipher_tag` a nombres.** Si la etiqueta que necesitas no existe
    todavía, se añade en

@@ -31,6 +31,7 @@ known vulnerabilities and conformance with the published standards.
 - [The interactive wizard (--wizard)](#the-interactive-wizard---wizard)
 - [Languages (--lang)](#languages---lang)
 - [Report formats](#report-formats)
+- [The three interfaces](#the-three-interfaces)
 - [The web interface](#the-web-interface)
 - [The MCP interface](#the-mcp-interface)
 - [Standards conformance (NIST, FIPS, ENS, PCI DSS, CIS…)](#standards-conformance-nist-fips-ens-pci-dss-cis)
@@ -233,6 +234,19 @@ the scan to a history file and shows each endpoint's grade over time.
 
 ---
 
+## The three interfaces
+
+The same audit is offered three ways, with identical results:
+
+- **CLI** — the command line of this manual (`./web-crypto-checker`).
+- **MCP** — a JSON-RPC 2.0 server over *stdio* for agents, with
+  `web-crypto-checker-mcp` (or `python -m web_crypto_checker.mcp`). It exposes a
+  `scan` tool (which takes the CLI's own `argv`) plus `help`, `list_profiles`,
+  `list_plugins`, `list_vulnerabilities` and `show_policy`.
+- **Web** — a single-scan web interface with `python -m web_crypto_checker.web`
+  (hardened: security headers, a job queue with a ceiling, and an optional token).
+  The `docker-compose.yml` brings it up in a container.
+
 ## The web interface
 
 An **additional** way to use the tool, not a replacement: the same `scan()`,
@@ -390,6 +404,19 @@ claude mcp list                     # check that it appears and connects
 **Other clients** (Cursor, VS Code, Zed…). They all consume the same
 `command`/`args`/`env` form; only where the file lives changes (e.g.
 `.cursor/mcp.json` in Cursor). See the client's documentation for the exact path.
+
+**Ollama.** Ollama runs models **locally**, but it is **not itself an MCP
+host**: it does not start MCP servers on its own. To give it this tool, use an
+MCP client or bridge that also talks to Ollama. The most direct is **mcphost** (an
+open-source MCP host that works with Ollama models): point its config at the
+server command,
+
+```json
+{ "mcpServers": { "web-crypto-checker": { "command": "web-crypto-checker-mcp" } } }
+```
+
+and launch it with `mcphost -m ollama:llama3.1 --config that-file.json`. Other
+clients that pair Ollama with MCP are oterm, LibreChat and Open WebUI.
 
 **Without installing (using the repository).** If you prefer not to install the
 package, point the client at `python3 -m` and tell it which directory to run in:
@@ -592,7 +619,7 @@ the TLS 1.3 sentinel), server cipher preference, Diffie-Hellman parameters
 | Code | Meaning |
 |---|---|
 | `0` | Every target was scanned successfully |
-| `1` | Some target could not be scanned (unreachable or error), or there was a **regression** with `--compare --fail-on-regression` |
+| `1` | Some target could not be scanned (unreachable or error); a **regression** with `--compare --fail-on-regression`; a finding that meets the `--fail-on` threshold; or an endpoint that fails a profile demanded with `--require-profile` |
 | `2` | Usage or configuration error (invalid format, profile or target; `--wizard` with no terminal) |
 
 ```yaml
@@ -631,6 +658,9 @@ Targets
 Scanning
   -t, --timeout SECONDS     maximum time per connection (default 6)
   -c, --concurrency N       targets in parallel (default 1)
+  -r, --retries N           retries per target when a scan fails (default 1)
+  -4, --ipv4                resolve target names to IPv4 addresses only
+  -6, --ipv6                resolve target names to IPv6 addresses only
   --active                  active probes (offensive traffic; only with authorisation)
 
 Trust (certificates)
@@ -640,17 +670,33 @@ Trust (certificates)
 Conformance and plugins
   --profile ID              evaluate each endpoint against a profile (repeatable)
   --list-profiles           list the conformance profiles and exit
+  --list-vulnerabilities    list the known vulnerabilities the policy checks, and exit
+  --show-policy             show the active scoring policy (categories, weights, grade scale) and exit
   --plugin-dir DIR          load detection plugins from a directory (repeatable)
   --list-plugins            list the plugins that would load and exit
 
 Output
   --format NAMES            console, text, json, csv, html, sarif, inventory, openmetrics
   -o, --output PATH         write the report to a file (base name with several formats)
+  -q, --quiet               suppress the per-target progress on standard error
+  -v, --verbose             report each endpoint and its grade when the scan finishes
+  --color {auto,always,never}  colourise terminal output (default auto)
+  --no-color                shorthand for --color never
+  -s, --summary-only        print only the summary, without the per-target detail
+  --notes                   include the policy's per-algorithm notes in console and text
+
+CI gates
+  --fail-on SEVERITY        exit with code 1 on a finding of that severity or worse
+  --require-profile ID      exit with code 1 unless every endpoint conforms to the profile (repeatable)
 
 Comparison and history
   --compare BASELINE        compare with a previous JSON report and show what changed
   --fail-on-regression      exit with code 1 if any endpoint got worse (with --compare)
   --history PATH            append this scan to a history file and show the grade trend
+  --history-report          with --history, print how the estate moved across the scans
+
+Policy
+  --export-policy FILE      write a copy of the scoring policy to FILE and exit
 
 Information
   --version                 show the version and exit
@@ -727,6 +773,10 @@ awk '$1=="server_name"{print $2}' /etc/nginx/sites-enabled/*.conf | ./web-crypto
 ./web-crypto-checker example.com --profile mozilla-modern --profile pci-dss-4
 ./web-crypto-checker --list-profiles                   # --list-profiles
 
+# Inspect the policy before scanning                    # --list-vulnerabilities, --show-policy
+./web-crypto-checker --list-vulnerabilities
+./web-crypto-checker --show-policy
+
 # Load your own detection plugins                      # --plugin-dir
 ./web-crypto-checker example.com --plugin-dir ./my-plugins
 ./web-crypto-checker --list-plugins                    # --list-plugins
@@ -744,6 +794,59 @@ awk '$1=="server_name"{print $2}' /etc/nginx/sites-enabled/*.conf | ./web-crypto
 
 # Historical series of grades per endpoint             # --history
 ./web-crypto-checker -f inventory.txt --history history.json
+
+# How the estate moved across the recorded scans       # --history-report
+./web-crypto-checker -f inventory.txt --history history.json --history-report
+```
+
+### CI gates: severity and conformance
+
+```bash
+# Fail (code 1) on a finding of this severity or worse         # --fail-on
+./web-crypto-checker example.com --fail-on high
+
+# Require every endpoint to conform to a profile               # --require-profile
+./web-crypto-checker example.com --require-profile mozilla-modern
+```
+
+### Resolution and retries
+
+```bash
+# Retry each target that fails                          # --retries
+./web-crypto-checker example.com --retries 2
+./web-crypto-checker example.com -r 2
+
+# Resolve to a single address family                    # --ipv4 / --ipv6
+./web-crypto-checker example.com --ipv4
+./web-crypto-checker example.com -4
+./web-crypto-checker example.com --ipv6
+./web-crypto-checker example.com -6
+```
+
+### Shaping the output
+
+```bash
+# Silence or expand the progress                        # --quiet / --verbose
+./web-crypto-checker -f inventory.txt --quiet
+./web-crypto-checker -f inventory.txt -q
+./web-crypto-checker -f inventory.txt --verbose
+./web-crypto-checker -f inventory.txt -v
+
+# Explicit terminal colour                               # --color / --no-color
+./web-crypto-checker example.com --color always
+./web-crypto-checker example.com --no-color
+
+# Only the summary, or with the per-algorithm notes      # --summary-only / --notes
+./web-crypto-checker -f inventory.txt --summary-only
+./web-crypto-checker -f inventory.txt -s
+./web-crypto-checker example.com --notes
+```
+
+### Policy
+
+```bash
+# Export the policy to a file to edit it                 # --export-policy
+./web-crypto-checker --export-policy policy.json
 ```
 
 ### Information

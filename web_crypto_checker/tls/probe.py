@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import socket
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from .constants import (
     CONTENT_TYPE_ALERT,
@@ -23,6 +23,17 @@ from .messages import ServerHello, parse_alert, parse_server_hello, read_handsha
 from .wire import Reader, TlsError
 
 DEFAULT_TIMEOUT = 6.0
+
+_ALERT_LEVEL_FATAL = 2  # AlertLevel.fatal (RFC 5246 7.2); level 1 is warning
+_ALERT_CLOSE_NOTIFY = 0  # AlertDescription.close_notify: a warning that still ends the connection
+
+#: How a probe opens its TCP connection: ``(address, timeout) -> socket``, the
+#: shape of ``socket.create_connection``. The default connects directly, for a
+#: port that speaks TLS from the first byte. A caller can pass its own to reach
+#: TLS a different way -- the mail scanner passes one that drives the SMTP/IMAP/
+#: POP3 STARTTLS dialogue first and returns the upgraded socket, so the same
+#: enumeration runs unchanged over an in-place upgrade.
+Connect = Callable[[Tuple[str, int], float], socket.socket]
 
 
 @dataclass
@@ -70,9 +81,17 @@ def _read_response(sock: socket.socket) -> ProbeResult:
 
         if content_type == CONTENT_TYPE_ALERT:
             try:
-                return ProbeResult(alert=parse_alert(fragment))
+                level, description = parse_alert(fragment)
             except TlsError as exc:
                 return ProbeResult(error=f"malformed alert: {exc}")
+            # A warning-level alert does not end the handshake (RFC 5246 7.2 / RFC 8446 6.1): a
+            # server that does not recognise the SNI may send a warning unrecognized_name(112) and
+            # then proceed with the ServerHello. Treating that as terminal blanked the whole probe,
+            # so the endpoint's real (possibly weak) TLS went unseen and graded UNKNOWN, slipping
+            # past --fail-on-insecure. Only a fatal alert or close_notify actually stops the server.
+            if level == _ALERT_LEVEL_FATAL or description == _ALERT_CLOSE_NOTIFY:
+                return ProbeResult(alert=(level, description))
+            continue
 
         if content_type != CONTENT_TYPE_HANDSHAKE:
             return ProbeResult(error=f"unexpected TLS record type {content_type}")
@@ -95,10 +114,17 @@ def send_client_hello(
     port: int,
     client_hello: bytes,
     timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> ProbeResult:
-    """Connect, send ``client_hello`` and return the classified response."""
+    """Connect, send ``client_hello`` and return the classified response.
+
+    ``connect`` opens the connection; it defaults to a direct TCP connection.
+    Passing one that first drives a STARTTLS upgrade lets the same probe reach a
+    server that speaks TLS only after an in-place upgrade.
+    """
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return ProbeResult(error=f"connection failed: {exc}")
     try:

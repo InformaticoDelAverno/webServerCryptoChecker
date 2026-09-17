@@ -116,7 +116,7 @@ responde. Si el servidor lo refleja en `Access-Control-Allow-Origin`:
 
 ### Contenido mixto y Subresource Integrity
 
-Del cuerpo de la página (acotado), dos escáneres de HTML con la librería estándar:
+Del cuerpo de la página (acotado), dos escáneres de HTML con la biblioteca estándar:
 
 - **Contenido mixto** ([`mixed_content.py`](../../web_crypto_checker/mixed_content.py)):
   un subrecurso `http://` explícito en una página HTTPS. `HTTP-MIXED-ACTIVE` (alta)

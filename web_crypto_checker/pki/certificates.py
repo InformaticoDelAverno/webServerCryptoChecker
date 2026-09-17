@@ -43,7 +43,7 @@ from ..tls.constants import (
     alert_description,
 )
 from ..tls.messages import build_client_hello, read_handshake
-from ..tls.probe import DEFAULT_TIMEOUT, _recv_exact
+from ..tls.probe import DEFAULT_TIMEOUT, Connect, _recv_exact
 from ..tls.wire import Reader, TlsError
 from . import ct
 from .roca import is_roca_vulnerable
@@ -288,6 +288,7 @@ def _extensions(extensions: Node, info: CertificateInfo) -> None:
         oid = _oid(extension.children[0])
         value = extension.children[-1].content  # skips the optional 'critical' BOOLEAN
         if oid == _OID_SAN:
+            info.has_san = True  # recorded even when it carries no dNSName (RFC 6125 6.4.4)
             for general_name in asn1.parse(value).children:
                 if general_name.tag_class == asn1.CLASS_CONTEXT and (
                     general_name.tag_number == _GENERAL_NAME_DNS
@@ -416,11 +417,14 @@ def retrieve_certificate_chain(
     sni: str = "",
     timeout: float = DEFAULT_TIMEOUT,
     cipher_suites: Optional[List[int]] = None,
+    connect: Optional[Connect] = None,
 ) -> Tuple[List[bytes], Optional[str]]:
     """Fetch the DER certificates a server presents, over a TLS 1.2 handshake.
 
     ``cipher_suites`` narrows the offer; a list restricted to one authentication type
-    (RSA or ECDSA) steers which certificate a dual-certificate server returns."""
+    (RSA or ECDSA) steers which certificate a dual-certificate server returns.
+    ``connect`` opens the connection (default: a direct one); a STARTTLS connector
+    lets the same retrieval run over an in-place upgrade."""
     hello = build_client_hello(
         _TLS12,
         cipher_suites if cipher_suites is not None else list(LEGACY_CIPHER_SUITES),
@@ -428,8 +432,9 @@ def retrieve_certificate_chain(
         groups=_DEFAULT_GROUPS,
         signature_schemes=_DEFAULT_SIGNATURE_SCHEMES,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return [], f"connection failed: {exc}"
     try:
@@ -469,7 +474,9 @@ def name_matches(pattern: str, host: str) -> bool:
 
 def hostname_matches(host: str, leaf: CertificateInfo) -> bool:
     candidates = list(leaf.sans)
-    if not candidates:
+    if not candidates and not leaf.has_san:
+        # The CN is a match candidate only for a legacy certificate with no SAN at all. When a
+        # SAN is present the CN is ignored, even if it carried no dNSName (RFC 6125 6.4.4).
         common_name = cn_of(leaf.subject)
         if common_name:
             candidates = [common_name]
@@ -529,6 +536,8 @@ class _SignedCert:
     identities: List[Tuple[int, bytes]] = field(default_factory=list)  # this cert's own names
     permitted: List[Tuple[int, bytes]] = field(default_factory=list)  # permittedSubtrees bases
     excluded: List[Tuple[int, bytes]] = field(default_factory=list)  # excludedSubtrees bases
+    has_san: bool = False  # whether the cert carries a SAN extension at all
+    common_name: str = ""  # the subject CN, used as a hostname only for a leaf with no SAN
 
 
 def _pss_parameters(algorithm: Node) -> Optional[Tuple[str, str, int]]:
@@ -628,6 +637,8 @@ def _signed_cert(der: bytes) -> Optional[_SignedCert]:
             identities=identities,
             permitted=permitted,
             excluded=excluded,
+            has_san=parsed.has_san,
+            common_name=cn_of(parsed.subject),
         )
     except (Asn1Error, CertificateError, IndexError, ValueError):
         return None
@@ -825,12 +836,32 @@ def _uri_within(uri: str, base: str) -> bool:
     return _dns_within(host, base)
 
 
+def _canonical_rdn(rdn: Node) -> frozenset:
+    """One RelativeDistinguishedName reduced to a comparable form. Directory-name matching is
+    not byte equality (RFC 5280 7.1): a name must compare equal regardless of the string encoding
+    chosen (PrintableString vs UTF8String) and of letter case and insignificant whitespace, and
+    an RDN is a SET so its attributes are unordered. Values are folded and whitespace-collapsed,
+    keyed by attribute OID; the encoding tag is dropped so the two string types compare equal."""
+    attributes = set()
+    for attribute_value in rdn.children:  # each AttributeTypeAndValue SEQUENCE
+        try:
+            oid = attribute_value.children[0].raw
+            text = attribute_value.children[1].content.decode("utf-8", "replace")
+            attributes.add((oid, " ".join(text.casefold().split())))
+        except IndexError:  # not a well-formed type-and-value: compare it verbatim, never crash
+            attributes.add((attribute_value.raw, ""))
+    return frozenset(attributes)
+
+
 def _dir_within(name: bytes, base: bytes) -> bool:
     """directoryName matching (RFC 5280 4.2.1.10): the base's RDN sequence is an initial
-    sub-sequence of the certificate's -- an empty base matches every name."""
+    sub-sequence of the certificate's, each RDN compared by X.500 name-matching rules (see
+    :func:`_canonical_rdn`), not raw DER -- an empty base matches every name. Byte comparison
+    would let an excluded subtree be bypassed by re-encoding a name in a different case or
+    string type."""
     try:
-        name_rdns = [rdn.raw for rdn in asn1.parse(name).children]
-        base_rdns = [rdn.raw for rdn in asn1.parse(base).children]
+        name_rdns = [_canonical_rdn(rdn) for rdn in asn1.parse(name).children]
+        base_rdns = [_canonical_rdn(rdn) for rdn in asn1.parse(base).children]
     except (Asn1Error, IndexError):
         return False
     return name_rdns[: len(base_rdns)] == base_rdns
@@ -850,11 +881,13 @@ def _name_within(form: int, name: bytes, base: bytes) -> bool:
     return _dir_within(name, base)  # _GENERAL_NAME_DIR
 
 
-def _cert_within_constraints(cert: _SignedCert, ca: _SignedCert) -> bool:
-    """Whether every name ``cert`` carries respects ``ca``'s NameConstraints: within the
+def _cert_within_constraints(
+    identities: List[Tuple[int, bytes]], ca: _SignedCert
+) -> bool:
+    """Whether every name in ``identities`` respects ``ca``'s NameConstraints: within the
     permitted subtrees of its own form (if that form is constrained) and outside every
     excluded one (RFC 5280 4.2.1.10)."""
-    for form, name in cert.identities:
+    for form, name in identities:
         if any(_name_within(form, name, base) for kind, base in ca.excluded if kind == form):
             return False
         permitted = [base for kind, base in ca.permitted if kind == form]
@@ -863,13 +896,26 @@ def _cert_within_constraints(cert: _SignedCert, ca: _SignedCert) -> bool:
     return True
 
 
+def _constrained_identities(cert: _SignedCert, is_leaf: bool) -> List[Tuple[int, bytes]]:
+    """The names of ``cert`` subject to name constraints. For a leaf with no SAN, the subject
+    CN is a server identity (``hostname_matches`` matches on it, RFC 6125 6.4.4), so it must be
+    constrained as a dNSName too -- otherwise a dNSName-constrained CA could issue a no-SAN
+    ``CN=mx.victim.com`` leaf outside its permitted subtree and the tool would still trust it.
+    A CA's CN is never a hostname, so this augmentation is leaf-only."""
+    identities = list(cert.identities)
+    if is_leaf and not cert.has_san and cert.common_name:
+        identities.append((_GENERAL_NAME_DNS, cert.common_name.encode("ascii", "replace")))
+    return identities
+
+
 def _name_constraints_ok(path: List[_SignedCert], root: _SignedCert) -> bool:
     """Whether every certificate's names satisfy the NameConstraints of every CA above it
     (RFC 5280 6.1.4) -- across all GeneralName forms and every certificate in the path,
     not just the leaf's dNSNames."""
     for position, cert in enumerate(path):
+        identities = _constrained_identities(cert, is_leaf=position == 0)
         for ca in [*path[position + 1 :], root]:
-            if not _cert_within_constraints(cert, ca):
+            if not _cert_within_constraints(identities, ca):
                 return False
     return True
 

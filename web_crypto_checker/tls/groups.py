@@ -22,14 +22,21 @@ from .constants import (
     NamedGroup,
 )
 from .messages import build_client_hello
-from .probe import DEFAULT_TIMEOUT, ProbeResult, send_client_hello
+from .probe import DEFAULT_TIMEOUT, Connect, ProbeResult, send_client_hello
 
 _TLS13 = PROTOCOL_VERSIONS[0]
 _TLS13_CIPHER_IDS = list(TLS13_CIPHER_SUITES)
 _ALL_SIGNATURE_SCHEMES = list(SIGNATURE_SCHEMES)
 
 
-def _probe(host: str, port: int, sni: str, offered: List[int], timeout: float) -> ProbeResult:
+def _probe(
+    host: str,
+    port: int,
+    sni: str,
+    offered: List[int],
+    timeout: float,
+    connect: Optional[Connect] = None,
+) -> ProbeResult:
     hello = build_client_hello(
         _TLS13,
         _TLS13_CIPHER_IDS,
@@ -38,7 +45,7 @@ def _probe(host: str, port: int, sni: str, offered: List[int], timeout: float) -
         signature_schemes=_ALL_SIGNATURE_SCHEMES,
         empty_key_share=True,
     )
-    return send_client_hello(host, port, hello, timeout)
+    return send_client_hello(host, port, hello, timeout, connect=connect)
 
 
 def _post_quantum_status(total: int, post_quantum: int) -> PostQuantumStatus:
@@ -52,7 +59,11 @@ def _post_quantum_status(total: int, post_quantum: int) -> PostQuantumStatus:
 
 
 def enumerate_groups(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str,
+    port: int,
+    sni: str = "",
+    timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[List[KeyExchangeGroup], PostQuantumStatus, Optional[str]]:
     """Return ``(groups_in_server_preference, post_quantum_status, error)``."""
     remaining: Dict[int, NamedGroup] = {group.code: group for group in NAMED_GROUPS}
@@ -64,7 +75,7 @@ def enumerate_groups(
     # server likes nothing left (a handshake_failure, so no ServerHello) or gives
     # a plain ServerHello -- never spins.
     while remaining:
-        result = _probe(host, port, sni, list(remaining), timeout)
+        result = _probe(host, port, sni, list(remaining), timeout, connect=connect)
         server_hello = result.server_hello
         if server_hello is None:
             if result.alert is None:

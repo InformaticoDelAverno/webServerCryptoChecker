@@ -16,9 +16,9 @@ import hmac
 import os
 import socket
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
-from ..crypto import aesgcm, chacha, hkdf
+from ..crypto import aesgcm, chacha, ec, hkdf
 from ..crypto.x25519 import x25519, x25519_base
 from .constants import (
     CONTENT_TYPE_ALERT,
@@ -34,11 +34,18 @@ from .constants import (
     alert_description,
 )
 from .messages import build_client_hello, parse_server_hello, read_handshake
-from .probe import DEFAULT_TIMEOUT, _recv_exact
+from .probe import DEFAULT_TIMEOUT, Connect, _recv_exact
 from .wire import Reader, TlsError
 
 _TLS13 = PROTOCOL_VERSIONS[0]
 _X25519 = 0x001D
+_SECP256R1 = 0x0017
+_SECP384R1 = 0x0018
+#: The NIST curves offered alongside X25519 on every 1.3 probe, by their supported_groups code.
+_NIST_CURVES = {_SECP256R1: ec.P256, _SECP384R1: ec.P384}
+#: Every group the 1.3 probes offer a key share for, so a server that does not do X25519 (a
+#: FIPS deployment restricted to the NIST curves) still finds a common group without a retry.
+_GROUPS = [_X25519, _SECP256R1, _SECP384R1]
 _SIGNATURE_SCHEMES = [0x0804, 0x0805, 0x0806, 0x0401, 0x0403, 0x0503, 0x0807]
 _HANDSHAKE_TYPE_FINISHED = 20
 _HANDSHAKE_TYPE_ENCRYPTED_EXTENSIONS = 8
@@ -160,19 +167,50 @@ class _Negotiated:
     cipher: _Cipher
 
 
-def _server_key_share(extension: Optional[bytes]) -> Optional[bytes]:
+def _server_key_share(extension: Optional[bytes]) -> Optional[Tuple[int, bytes]]:
+    """The ``(group, public)`` the server chose in its key_share, or ``None`` if unreadable."""
     if extension is None:
         return None
     reader = Reader(extension)
     try:
-        reader.read_u16()  # the selected group
-        return reader.read_vector(2)
+        return reader.read_u16(), reader.read_vector(2)
     except TlsError:
         return None
 
 
+def _key_exchange() -> Tuple[Dict[int, object], List[Tuple[int, bytes]]]:
+    """Ephemeral private keys keyed by group, and the ``(group, public)`` key shares to offer for
+    every group the client supports -- X25519 and the NIST curves P-256/P-384 -- so a server that
+    does not speak X25519 still finds a common group in the first flight (no HelloRetryRequest)."""
+    x_private = os.urandom(32)
+    privates: Dict[int, object] = {_X25519: x_private}
+    shares: List[Tuple[int, bytes]] = [(_X25519, x25519_base(x_private))]
+    for group, curve in _NIST_CURVES.items():
+        scalar, point = ec.generate_keypair(curve)
+        privates[group] = scalar
+        shares.append((group, ec.encode_public(curve, point)))
+    return privates, shares
+
+
+def _derive_shared(group: int, private: object, server_public: bytes) -> Optional[bytes]:
+    """The ECDHE shared secret for the group the server selected, or ``None`` if it is one the
+    client did not offer a usable private for, or the peer's share is not a valid point."""
+    if group == _X25519:
+        assert isinstance(private, bytes)
+        shared = x25519(private, server_public)
+        # RFC 8446 7.4.2 / RFC 7748 6.1: a low-order server share yields an all-zero shared
+        # secret, which a client MUST reject -- otherwise keys derive from an attacker-known
+        # (fully predictable) value. ec.ecdh_shared already rejects the NIST analogue.
+        return None if shared == bytes(32) else shared
+    curve = _NIST_CURVES.get(group)
+    if curve is None:
+        return None
+    assert isinstance(private, int)
+    return ec.ecdh_shared(curve, private, server_public)
+
+
 def _negotiate(
-    sock: socket.socket, client_hello_handshake: bytes, private: bytes
+    sock: socket.socket, client_hello_handshake: bytes, privates: Dict[int, object]
 ) -> Tuple[Optional[_Negotiated], Optional[str]]:
     header = _recv_exact(sock, 5)
     if header is None:
@@ -202,11 +240,16 @@ def _negotiate(
     if cipher is None:
         return None, "the server did not select an offered cipher suite"
 
-    server_public = _server_key_share(server_hello.extensions.get(EXT_KEY_SHARE))
-    if server_public is None:
+    share = _server_key_share(server_hello.extensions.get(EXT_KEY_SHARE))
+    if share is None:
         return None, "the ServerHello carried no usable key share"
-
-    shared = x25519(private, server_public)
+    group, server_public = share
+    private = privates.get(group)
+    if private is None:
+        return None, "the server selected a key-exchange group the client did not offer"
+    shared = _derive_shared(group, private, server_public)
+    if shared is None:
+        return None, "the server's key share is not a valid point for the selected group"
     transcript = cipher.hashmod(client_hello_handshake + fragment).digest()
     negotiated = _Negotiated(
         server_hello=fragment, shared_secret=shared, transcript=transcript, cipher=cipher
@@ -304,7 +347,8 @@ def _extract_certificate(buffer: bytes) -> Tuple[List[bytes], Optional[bytes]]:
 
 def _server_flight(
     host: str, port: int, sni: str, timeout: float,
-    signature_schemes: Optional[List[int]] = None, **hello_kwargs: object,
+    signature_schemes: Optional[List[int]] = None, connect: Optional[Connect] = None,
+    **hello_kwargs: object,
 ) -> Tuple[bytes, Optional[str]]:
     """Handshake with a TLS 1.3 server and return its decrypted flight (or an error).
 
@@ -312,23 +356,26 @@ def _server_flight(
     CertificateVerify, Finished -- is all a probe needs to read what the server
     offers, without completing the handshake. ``signature_schemes`` narrows what the
     client will accept in a CertificateVerify, which is how the server is steered to
-    pick one key type's certificate over another (RFC 8446 4.4.2.2).
+    pick one key type's certificate over another (RFC 8446 4.4.2.2). ``connect`` opens
+    the connection (direct, or a STARTTLS upgrade), so the probe reaches a mail service
+    behind STARTTLS, not only an implicit-TLS port.
     """
-    private = os.urandom(32)
+    privates, shares = _key_exchange()
     hello = build_client_hello(
-        _TLS13, _OFFERED, server_name=sni, groups=[_X25519],
+        _TLS13, _OFFERED, server_name=sni, groups=_GROUPS,
         signature_schemes=signature_schemes or _SIGNATURE_SCHEMES,
-        key_share=(_X25519, x25519_base(private)),
+        key_shares=shares,
         **hello_kwargs,  # type: ignore[arg-type]
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return b"", f"connection failed: {exc}"
     try:
         sock.settimeout(timeout)
         sock.sendall(hello)
-        negotiated, error = _negotiate(sock, hello[5:], private)
+        negotiated, error = _negotiate(sock, hello[5:], privates)
         if error is not None:
             return b"", error
         assert negotiated is not None
@@ -344,15 +391,16 @@ def _server_flight(
 
 def retrieve_tls13_certificate(
     host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
-    signature_schemes: Optional[List[int]] = None,
+    signature_schemes: Optional[List[int]] = None, connect: Optional[Connect] = None,
 ) -> Tuple[List[bytes], Optional[bytes], Optional[str]]:
     """Fetch a TLS 1.3 server's certificates (and any stapled OCSP), decrypting the flight.
 
     ``signature_schemes`` narrows the accepted CertificateVerify schemes to steer which
-    key type's certificate a dual-certificate server returns; default offers all."""
+    key type's certificate a dual-certificate server returns; default offers all.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade)."""
     flight, error = _server_flight(
         host, port, sni, timeout,
-        signature_schemes=signature_schemes, offer_status_request=True,
+        signature_schemes=signature_schemes, connect=connect, offer_status_request=True,
     )
     if error is not None:
         return [], None, error
@@ -443,27 +491,30 @@ def _classify_client_auth(
 
 
 def probe_client_certificate(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[bool], Optional[str]]:
     """Whether a TLS 1.3 server requests a client certificate, and whether it requires one.
 
     Returns ``(requested, required, error)``. ``required`` is True when the server
     refuses a certificate-less handshake, False when it accepts one, and None when it
     was requested but enforcement could not be determined (or was not requested).
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade).
     """
-    private = os.urandom(32)
+    privates, shares = _key_exchange()
     hello = build_client_hello(
-        _TLS13, _OFFERED, server_name=sni, groups=[_X25519],
-        signature_schemes=_SIGNATURE_SCHEMES, key_share=(_X25519, x25519_base(private)),
+        _TLS13, _OFFERED, server_name=sni, groups=_GROUPS,
+        signature_schemes=_SIGNATURE_SCHEMES, key_shares=shares,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return None, None, f"connection failed: {exc}"
     try:
         sock.settimeout(timeout)
         sock.sendall(hello)
-        negotiated, error = _negotiate(sock, hello[5:], private)
+        negotiated, error = _negotiate(sock, hello[5:], privates)
         if error is not None:
             return None, None, error
         assert negotiated is not None
@@ -545,23 +596,26 @@ def _read_early_data_offer(sock: socket.socket, established: _Established) -> Op
 
 
 def probe_early_data(
-    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT
+    host: str, port: int, sni: str = "", timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[bool], Optional[str]]:
-    """Whether a TLS 1.3 server offers 0-RTT early data, read from its NewSessionTicket."""
-    private = os.urandom(32)
+    """Whether a TLS 1.3 server offers 0-RTT early data, read from its NewSessionTicket.
+    ``connect`` opens the connection (direct, or a STARTTLS upgrade)."""
+    privates, shares = _key_exchange()
     hello = build_client_hello(
-        _TLS13, _OFFERED, server_name=sni, groups=[_X25519],
-        signature_schemes=_SIGNATURE_SCHEMES, key_share=(_X25519, x25519_base(private)),
+        _TLS13, _OFFERED, server_name=sni, groups=_GROUPS,
+        signature_schemes=_SIGNATURE_SCHEMES, key_shares=shares,
         alpn=["http/1.1"],
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return None, f"connection failed: {exc}"
     try:
         sock.settimeout(timeout)
         sock.sendall(hello)
-        negotiated, error = _negotiate(sock, hello[5:], private)
+        negotiated, error = _negotiate(sock, hello[5:], privates)
         if error is not None:
             return None, error
         assert negotiated is not None
@@ -594,27 +648,30 @@ def exchange_over_tls13(
     timeout: float,
     alpn: List[str],
     is_complete: Callable[[bytes], bool],
+    connect: Optional[Connect] = None,
 ) -> Tuple[Optional[str], bytes, Optional[str]]:
     """Handshake offering ``alpn``, send ``request``, read until ``is_complete``.
 
-    Returns ``(negotiated_alpn, response, error)``. Unlike :func:`fetch_over_tls13`
-    this exposes the ALPN the server chose and lets the caller decide when the
-    reply is complete -- what a binary protocol like HTTP/2 needs.
+    Returns ``(negotiated_alpn, response, error)``: it exposes the ALPN the server
+    chose and lets the caller decide when the reply is complete -- what a binary
+    protocol like HTTP/2 needs. ``connect`` opens the connection (direct, or a
+    STARTTLS upgrade), so the exchange reaches a mail service.
     """
-    private = os.urandom(32)
+    privates, shares = _key_exchange()
     hello = build_client_hello(
-        _TLS13, _OFFERED, server_name=sni, groups=[_X25519],
-        signature_schemes=_SIGNATURE_SCHEMES, key_share=(_X25519, x25519_base(private)),
+        _TLS13, _OFFERED, server_name=sni, groups=_GROUPS,
+        signature_schemes=_SIGNATURE_SCHEMES, key_shares=shares,
         alpn=alpn,
     )
+    opener: Connect = connect if connect is not None else socket.create_connection
     try:
-        sock = socket.create_connection((host, port), timeout)
+        sock = opener((host, port), timeout)
     except OSError as exc:
         return None, b"", f"connection failed: {exc}"
     try:
         sock.settimeout(timeout)
         sock.sendall(hello)
-        negotiated, error = _negotiate(sock, hello[5:], private)
+        negotiated, error = _negotiate(sock, hello[5:], privates)
         if error is not None:
             return None, b"", error
         assert negotiated is not None

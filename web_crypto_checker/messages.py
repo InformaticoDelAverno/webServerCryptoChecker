@@ -398,10 +398,10 @@ MESSAGES: Dict[str, Dict[str, str]] = {
     "rep.con.sig_unchecked": {"en": "unchecked", "es": "sin comprobar"},
     "rep.con.no_reneg": {
         "en": "NO (RFC 5746 unsupported)",
-        "es": "NO (RFC 5746 no soportada)",
+        "es": "NO (RFC 5746 no admitida)",
     },
-    "rep.con.no_ems": {"en": "NO (RFC 7627 unsupported)", "es": "NO (RFC 7627 no soportada)"},
-    "rep.con.no_scsv": {"en": "NO (RFC 7507 unsupported)", "es": "NO (RFC 7507 no soportada)"},
+    "rep.con.no_ems": {"en": "NO (RFC 7627 unsupported)", "es": "NO (RFC 7627 no admitida)"},
+    "rep.con.no_scsv": {"en": "NO (RFC 7507 unsupported)", "es": "NO (RFC 7507 no admitida)"},
     "rep.con.compression_disabled": {"en": "disabled", "es": "desactivada"},
     "rep.con.compression_enabled": {"en": "ENABLED (CRIME)", "es": "ACTIVADA (CRIME)"},
     # -- report: plain text summary footer ----------------------------------
@@ -421,28 +421,146 @@ MESSAGES: Dict[str, Dict[str, str]] = {
     },
     # -- report: HTML renderer ----------------------------------------------
     "rep.html.doc_title": {"en": "{tool} report", "es": "Informe de {tool}"},
-    "rep.html.summary": {
-        "en": "{total} endpoint(s), {reachable} reachable",
-        "es": "{total} extremo(s), {reachable} accesible(s)",
+    "rep.html.audit_title": {"en": "TLS audit report", "es": "Informe de auditoría TLS"},
+    "rep.html.generated": {"en": "Generated {when}", "es": "Generado {when}"},
+    "rep.html.targets_count": {"en": "{count} target(s)", "es": "{count} objetivo(s)"},
+    "rep.html.policy": {"en": "Policy {name} {version}", "es": "Política {name} {version}"},
+    # summary: stat cards
+    "rep.html.stat_targets": {"en": "targets", "es": "objetivos"},
+    "rep.html.stat_secure": {"en": "secure", "es": "seguros"},
+    "rep.html.stat_need_action": {"en": "need action", "es": "requieren acción"},
+    "rep.html.stat_pq_ready": {"en": "post-quantum ready", "es": "preparados post-cuántico"},
+    "rep.html.stat_cve": {"en": "with known CVEs", "es": "con CVE conocidas"},
+    "rep.html.stat_avg_score": {"en": "average score", "es": "puntuación media"},
+    "rep.html.stat_unreachable": {"en": "unreachable", "es": "inalcanzables"},
+    # summary: widespread vulnerabilities
+    "rep.html.widespread_heading": {
+        "en": "Most widespread vulnerabilities",
+        "es": "Vulnerabilidades más extendidas",
     },
-    "rep.html.error": {"en": "error: {error}", "es": "error: {error}"},
-    "rep.html.grade": {"en": "grade {grade}", "es": "nota {grade}"},
-    "rep.html.verdict": {"en": "verdict {verdict}", "es": "veredicto {verdict}"},
-    "rep.html.tls_versions": {"en": "TLS versions: {versions}", "es": "versiones TLS: {versions}"},
-    "rep.html.none": {"en": "none", "es": "ninguna"},
-    "rep.html.certificate": {
-        "en": "certificate: {subject} ({type}, {sig})",
-        "es": "certificado: {subject} ({type}, {sig})",
+    "rep.html.col_identifier": {"en": "Identifier", "es": "Identificador"},
+    "rep.html.col_targets": {"en": "Targets", "es": "Objetivos"},
+    "rep.html.count_of": {"en": "{count} of {total}", "es": "{count} de {total}"},
+    # summary: conformance by profile
+    "rep.html.conformance_heading": {
+        "en": "Conformance by profile",
+        "es": "Conformidad por perfil",
     },
+    "rep.html.conformance_intro": {
+        "en": "How the whole run looks to each published standard.",
+        "es": "Cómo se ve toda la ejecución para cada estándar publicado.",
+    },
+    "rep.html.conf_summary": {"en": "{passed}/{total} pass", "es": "{passed}/{total} cumplen"},
+    "rep.html.conf_conform": {"en": "Conforming", "es": "Cumplen"},
+    "rep.html.conf_fail": {"en": "Failing", "es": "Incumplen"},
+    "rep.html.conf_not_assessed": {"en": "Not assessed", "es": "No evaluados"},
+    # summary: all-targets table
+    "rep.html.all_targets": {"en": "All targets", "es": "Todos los objetivos"},
+    "rep.html.col_target": {"en": "Target", "es": "Objetivo"},
+    "rep.html.col_score": {"en": "Score", "es": "Puntuación"},
+    "rep.html.col_post_quantum": {"en": "Post-quantum", "es": "Post-cuántico"},
+    "rep.html.col_trust": {"en": "Trust", "es": "Confianza"},
+    # details section
+    "rep.html.details_heading": {"en": "Targets", "es": "Objetivos"},
+    "rep.html.expand_all": {"en": "expand all", "es": "expandir todo"},
+    "rep.html.collapse_all": {"en": "collapse all", "es": "contraer todo"},
+    "rep.html.finding_note": {
+        "en": "{n} critical/high finding(s)",
+        "es": "{n} hallazgo(s) crítico(s)/alto(s)",
+    },
+    "rep.html.scan_failed": {"en": "Scan failed: {error}", "es": "Escaneo fallido: {error}"},
+    "rep.html.unknown_error": {"en": "unknown error", "es": "error desconocido"},
+    # per-target overview
+    "rep.html.address": {"en": "Address", "es": "Dirección"},
+    "rep.html.security_strength": {"en": "Security strength", "es": "Fuerza de seguridad"},
+    "rep.html.n_bit": {"en": "{bits}-bit", "es": "{bits} bits"},
+    "rep.html.post_quantum": {"en": "Post-quantum", "es": "Post-cuántico"},
+    "rep.html.compression": {"en": "TLS compression", "es": "Compresión TLS"},
+    "rep.html.compression_disabled": {"en": "disabled", "es": "desactivada"},
+    "rep.html.compression_enabled": {"en": "enabled", "es": "activada"},
+    "rep.html.compression_unknown": {"en": "unknown", "es": "desconocida"},
+    "rep.html.scanned_at": {"en": "Scanned at", "es": "Escaneado el"},
+    "rep.html.duration": {"en": "Duration", "es": "Duración"},
+    # per-target certificate
+    "rep.html.certificate_heading": {"en": "Certificate", "es": "Certificado"},
     "rep.html.certificate_not_retrieved": {
-        "en": "certificate: not retrieved ({error})",
-        "es": "certificado: no obtenido ({error})",
+        "en": "Not retrieved ({error})",
+        "es": "No obtenido ({error})",
     },
-    "rep.html.protocols_offered": {"en": "protocols offered:", "es": "protocolos ofrecidos:"},
-    "rep.html.finding": {"en": "[{severity}] {title}", "es": "[{severity}] {title}"},
-    "rep.html.compliance": {
-        "en": "compliance {id}: {status}",
-        "es": "conformidad {id}: {status}",
+    "rep.html.n_bit_key": {"en": "{type} {bits}-bit", "es": "{type} {bits} bits"},
+    "rep.html.cert_subject": {"en": "Subject", "es": "Sujeto"},
+    "rep.html.cert_key": {"en": "Key", "es": "Clave"},
+    "rep.html.cert_signature": {"en": "Signature", "es": "Firma"},
+    "rep.html.cert_trust": {"en": "Trust", "es": "Confianza"},
+    "rep.html.cert_sans": {"en": "Names", "es": "Nombres"},
+    # per-target algorithm classes
+    "rep.html.class_protocol": {"en": "Protocol versions", "es": "Versiones de protocolo"},
+    "rep.html.class_cipher": {"en": "Cipher suites", "es": "Conjuntos de cifrado"},
+    "rep.html.class_group": {"en": "Key-exchange groups", "es": "Grupos de intercambio de claves"},
+    "rep.html.class_signature": {"en": "Signature algorithms", "es": "Algoritmos de firma"},
+    "rep.html.class_certificate": {"en": "Certificate", "es": "Certificado"},
+    "rep.html.class_compression": {"en": "Compression", "es": "Compresión"},
+    "rep.html.col_rating": {"en": "Rating", "es": "Valoración"},
+    "rep.html.col_algorithm": {"en": "Algorithm", "es": "Algoritmo"},
+    "rep.html.col_properties": {"en": "Properties", "es": "Propiedades"},
+    "rep.html.col_notes": {"en": "Notes", "es": "Notas"},
+    # per-target offered protocols
+    "rep.html.protocols_offered": {"en": "Protocols offered", "es": "Protocolos ofrecidos"},
+    # per-target conformance
+    "rep.html.conformance_section": {"en": "Standards conformance", "es": "Conformidad normativa"},
+    "rep.html.effective_strength_bits": {
+        "en": "Effective security strength: {bits} bits",
+        "es": "Fuerza de seguridad efectiva: {bits} bits",
+    },
+    "rep.html.held_down_by": {"en": "Held down by {items}.", "es": "Limitada por {items}."},
+    "rep.html.source": {"en": "Source: {ref}", "es": "Fuente: {ref}"},
+    "rep.html.col_result": {"en": "Result", "es": "Resultado"},
+    "rep.html.col_standard": {"en": "Standard", "es": "Estándar"},
+    "rep.html.col_detail": {"en": "Detail", "es": "Detalle"},
+    "rep.html.badge_pass": {"en": "pass", "es": "cumple"},
+    "rep.html.badge_fail": {"en": "fail", "es": "incumple"},
+    "rep.html.badge_not_assessed": {"en": "not assessed", "es": "no evaluado"},
+    "rep.html.not_assessed_reason": {"en": "Not assessed: {reason}", "es": "No evaluado: {reason}"},
+    "rep.html.and_more": {"en": "and {n} more", "es": "y {n} más"},
+    # per-target vulnerabilities and findings
+    "rep.html.vulnerabilities_section": {"en": "Vulnerabilities", "es": "Vulnerabilidades"},
+    "rep.html.findings_section": {"en": "Findings", "es": "Hallazgos"},
+    "rep.html.no_issue": {
+        "en": "No configuration issues found.",
+        "es": "Sin problemas de configuración.",
+    },
+    "rep.html.fix_label": {"en": "Fix:", "es": "Solución:"},
+    "rep.html.see_label": {"en": "See:", "es": "Véase:"},
+    # legend and footer
+    "rep.html.legend_heading": {"en": "Rating legend", "es": "Leyenda de valoración"},
+    "rep.html.legend_recommended": {
+        "en": "Modern, no known weakness.",
+        "es": "Moderno, sin debilidad conocida.",
+    },
+    "rep.html.legend_acceptable": {
+        "en": "Safe today, being phased out.",
+        "es": "Seguro hoy, en retirada.",
+    },
+    "rep.html.legend_weak": {
+        "en": "Outdated; plan to replace it.",
+        "es": "Obsoleto; planifica su reemplazo.",
+    },
+    "rep.html.legend_insecure": {
+        "en": "Broken; remove it now.",
+        "es": "Roto; elimínalo ya.",
+    },
+    "rep.html.scoring": {
+        "en": "The grade weighs every class; the worst offender caps it.",
+        "es": "La nota pondera cada clase; el peor caso la limita.",
+    },
+    "rep.html.footer_generated_by": {
+        "en": "Generated by {tool} {version}.",
+        "es": "Generado por {tool} {version}.",
+    },
+    "rep.html.footer_command": {"en": "Command:", "es": "Comando:"},
+    "rep.html.footer_reflects": {
+        "en": "It reflects the servers as they answered at scan time.",
+        "es": "Refleja los servidores tal y como respondieron al escanear.",
     },
     # -- command line: option help (--help) ---------------------------------
     "cli.h.targets": {
@@ -496,6 +614,14 @@ MESSAGES: Dict[str, Dict[str, str]] = {
         "en": "list the available compliance profiles and exit",
         "es": "listar los perfiles de conformidad disponibles y salir",
     },
+    "cli.h.list_vulnerabilities": {
+        "en": "list the known vulnerabilities the policy checks, and exit",
+        "es": "listar las vulnerabilidades conocidas que comprueba la política, y salir",
+    },
+    "cli.h.show_policy": {
+        "en": "show the active scoring policy (categories, weights, grade scale) and exit",
+        "es": "mostrar la política de puntuación activa (categorías, pesos, escala) y salir",
+    },
     "cli.h.plugin_dir": {
         "en": "load detection plugins from a directory (repeatable)",
         "es": "cargar plugins de detección de un directorio (repetible)",
@@ -545,6 +671,72 @@ MESSAGES: Dict[str, Dict[str, str]] = {
         "es": "no validar la cadena de certificados contra ningún almacén de confianza",
     },
     "cli.h.version": {"en": "print the version and exit", "es": "imprimir la versión y salir"},
+    "cli.h.fail_on": {
+        "en": (
+            "exit with code 1 when a finding of this severity or worse is reported "
+            "(default: never)"
+        ),
+        "es": (
+            "salir con código 1 cuando se informe de un hallazgo de esta severidad o peor "
+            "(por defecto: never)"
+        ),
+    },
+    "cli.h.require_profile": {
+        "en": (
+            "exit with code 1 unless every endpoint conforms to this profile "
+            "(see --list-profiles); repeatable"
+        ),
+        "es": (
+            "salir con código 1 salvo que todos los extremos cumplan este perfil "
+            "(ver --list-profiles); repetible"
+        ),
+    },
+    "cli.h.quiet": {
+        "en": "suppress the per-target progress on standard error",
+        "es": "silenciar el progreso por objetivo en la salida de error estándar",
+    },
+    "cli.h.verbose": {
+        "en": "report each endpoint and its grade when the scan finishes",
+        "es": "informar de cada extremo y su nota al terminar el escaneo",
+    },
+    "cli.h.color": {
+        "en": "colourise terminal output (default: auto)",
+        "es": "colorear la salida de la terminal (por defecto: auto)",
+    },
+    "cli.h.no_color": {
+        "en": "shorthand for --color never",
+        "es": "atajo de --color never",
+    },
+    "cli.h.summary_only": {
+        "en": "print only the summary, without the per-target detail",
+        "es": "imprimir solo el resumen, sin el detalle por objetivo",
+    },
+    "cli.h.notes": {
+        "en": "include the policy's per-algorithm notes in the console and text reports",
+        "es": (
+            "incluir en los informes de consola y texto las notas por algoritmo de la política"
+        ),
+    },
+    "cli.h.history_report": {
+        "en": "with --history, print how the estate moved across the recorded scans",
+        "es": "con --history, mostrar cómo ha evolucionado el parque en los escaneos registrados",
+    },
+    "cli.h.export_policy": {
+        "en": "write a copy of the bundled scoring policy to FILE and exit",
+        "es": "escribir una copia de la política de puntuación incorporada en FICHERO y salir",
+    },
+    "cli.h.retries": {
+        "en": "retries per target when a scan fails (default 1)",
+        "es": "reintentos por objetivo cuando falla un escaneo (por defecto 1)",
+    },
+    "cli.h.ipv4": {
+        "en": "resolve target names to IPv4 addresses only",
+        "es": "resolver los nombres de objetivo solo a direcciones IPv4",
+    },
+    "cli.h.ipv6": {
+        "en": "resolve target names to IPv6 addresses only",
+        "es": "resolver los nombres de objetivo solo a direcciones IPv6",
+    },
     # -- command line: metavars ---------------------------------------------
     "cli.mv.lang": {"en": "LANG", "es": "IDIOMA"},
     "cli.mv.path": {"en": "PATH", "es": "RUTA"},

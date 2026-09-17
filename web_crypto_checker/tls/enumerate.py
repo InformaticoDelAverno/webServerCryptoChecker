@@ -23,7 +23,7 @@ from .constants import (
     cipher_suite_name,
 )
 from .messages import build_client_hello
-from .probe import DEFAULT_TIMEOUT, ProbeResult, send_client_hello
+from .probe import DEFAULT_TIMEOUT, Connect, ProbeResult, send_client_hello
 
 _X25519_CODE = 0x001D
 #: Groups offered on every probe: x25519, secp256r1/384r1/521r1, ffdhe2048/3072.
@@ -54,6 +54,7 @@ def _probe(
     version: ProtocolVersionSpec,
     cipher_ids: List[int],
     timeout: float,
+    connect: Optional[Connect] = None,
 ) -> ProbeResult:
     key_share = (_X25519_CODE, os.urandom(32)) if version.is_tls13 else None
     hello = build_client_hello(
@@ -64,7 +65,7 @@ def _probe(
         signature_schemes=_ALL_SIGNATURE_SCHEMES,
         key_share=key_share,
     )
-    return send_client_hello(host, port, hello, timeout)
+    return send_client_hello(host, port, hello, timeout, connect=connect)
 
 
 def _enumerate_version(
@@ -73,6 +74,7 @@ def _enumerate_version(
     sni: str,
     version: ProtocolVersionSpec,
     timeout: float,
+    connect: Optional[Connect] = None,
 ) -> Tuple[List[int], bool, Optional[str]]:
     """Return ``(cipher_ids_in_server_order, reached, error)`` for one version."""
     remaining = _cipher_ids_for(version)
@@ -84,7 +86,7 @@ def _enumerate_version(
     # loop ends when the server likes nothing left (it exits here) or refuses
     # (it breaks) -- never spins.
     while remaining:
-        result = _probe(host, port, sni, version, remaining, timeout)
+        result = _probe(host, port, sni, version, remaining, timeout, connect=connect)
         server_hello = result.server_hello
         if server_hello is None:
             if result.alert is None:
@@ -109,15 +111,22 @@ def enumerate_endpoint(
     port: int,
     sni: str = "",
     timeout: float = DEFAULT_TIMEOUT,
+    connect: Optional[Connect] = None,
 ) -> EnumerationResult:
-    """Enumerate protocol versions and cipher suites for one endpoint."""
+    """Enumerate protocol versions and cipher suites for one endpoint.
+
+    ``connect`` is threaded to every probe so the whole enumeration can run over
+    an in-place upgrade (STARTTLS) as easily as over a direct TLS port.
+    """
     protocols: List[ProtocolSupport] = []
     cipher_map: Dict[int, CipherSuite] = {}
     reachable = False
     first_error: Optional[str] = None
 
     for version in PROTOCOL_VERSIONS:
-        chosen, reached, error = _enumerate_version(host, port, sni, version, timeout)
+        chosen, reached, error = _enumerate_version(
+            host, port, sni, version, timeout, connect=connect
+        )
         reachable = reachable or reached
         if error is not None and first_error is None:
             first_error = error

@@ -96,17 +96,19 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def resolve(host: str) -> List[str]:
+def resolve(host: str, family: int = socket.AF_UNSPEC) -> List[str]:
     """Every distinct address a host resolves to, or the literal itself.
 
-    Both address families are returned, de-duplicated and in the order the
-    resolver gave them, so a dual-stacked name is scanned on each address it
-    answers on rather than on whichever one happened to come first.
+    Both address families are returned by default, de-duplicated and in the order
+    the resolver gave them, so a dual-stacked name is scanned on each address it
+    answers on rather than on whichever one happened to come first. ``family``
+    (``AF_INET`` / ``AF_INET6``, from ``--ipv4`` / ``--ipv6``) restricts the
+    resolution to a single address family; a literal is returned unchanged.
     """
     if _is_ip_literal(host):
         return [host]
     try:
-        infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
+        infos = socket.getaddrinfo(host, None, family=family, proto=socket.IPPROTO_TCP)
     except socket.gaierror as exc:
         raise ScanError(f"cannot resolve {host}: {exc}") from exc
     addresses: List[str] = []
@@ -285,10 +287,11 @@ def scan_target(
     timeout: float = DEFAULT_TIMEOUT,
     trust_store: Optional[TrustStore] = None,
     active: bool = False,
+    address_family: int = socket.AF_UNSPEC,
 ) -> List[TargetResult]:
     """Scan one target, returning one result per resolved address."""
     try:
-        addresses = resolve(target.host)
+        addresses = resolve(target.host, address_family)
     except ScanError as exc:
         return [
             TargetResult(
@@ -569,6 +572,8 @@ def scan(
     command_line: str = "",
     progress: Optional[Callable[[], None]] = None,
     language: str = DEFAULT_LANGUAGE,
+    retries: int = 1,
+    address_family: int = socket.AF_UNSPEC,
 ) -> ScanReport:
     """Scan every target and assemble the full report.
 
@@ -589,20 +594,26 @@ def scan(
     started_at = _now_iso()
     started = time.monotonic()
 
+    def _scan_once(target: Target) -> List[TargetResult]:
+        # Retry a target only while every address of it failed: a partial success
+        # (one address up, another down) is a real finding, not a transient error.
+        group = scan_target(target, timeout, trust_store, active, address_family)
+        attempts = 1
+        while attempts < retries and not any(result.ok for result in group):
+            group = scan_target(target, timeout, trust_store, active, address_family)
+            attempts += 1
+        return group
+
     results: List[TargetResult] = []
     if concurrency > 1 and len(targets) > 1:
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
-
-            def _one(target: Target) -> List[TargetResult]:
-                return scan_target(target, timeout, trust_store, active)
-
-            for group in pool.map(_one, targets):
+            for group in pool.map(_scan_once, targets):
                 results.extend(group)
                 if progress is not None:
                     progress()
     else:
         for target in targets:
-            results.extend(scan_target(target, timeout, trust_store, active))
+            results.extend(_scan_once(target))
             if progress is not None:
                 progress()
 
